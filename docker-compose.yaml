@@ -1,0 +1,16 @@
+version: '3.9'
+services:
+  postgres:
+    container_name: "postgres"
+    image: postgres:15.3-alpine3.18
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: saga
+  dbeaver:
+    container_name: "dbeaver"
+    image: dbeaver/cloudbeaver:latest
+    ports:
+      - "9090:8978"
