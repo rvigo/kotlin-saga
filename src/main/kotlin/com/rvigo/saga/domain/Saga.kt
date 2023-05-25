@@ -26,25 +26,11 @@ data class Saga(
     @Column(name = "hotel_reservation_id")
     var hotelReservationId: UUID? = null,
 ) {
-    fun markAsCompensated(): Saga {
-        this.status = Status.COMPENSATED
-        return this
-    }
+    fun markAsCompensated() = copy(status = Status.COMPENSATED)
+    fun markAsCompensating() = copy(status = Status.COMPENSATING)
+    fun markAsCompleted() = copy(status = Status.COMPLETED)
+    fun updateTripId(tripId: UUID?) = copy(tripId = tripId)
+    fun updateReservationId(reservationId: UUID?) = copy(hotelReservationId = reservationId)
 
-    fun markAsCompensating(): Saga {
-        this.status = Status.COMPENSATING
-        return this
-    }
-
-    fun markAsCompleted(): Saga {
-        this.status = Status.COMPLETED
-        return this
-    }
-
-    fun updateTripId(tripId: UUID?) = this.copy(tripId = tripId)
-
-    fun updateReservationId(reservationId: UUID?) = this.copy(hotelReservationId = reservationId)
-
-    // TODO event sourcing?????
     enum class Status { STARTED, COMPLETED, COMPENSATING, COMPENSATED }
 }

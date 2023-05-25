@@ -25,6 +25,11 @@ dependencies {
     implementation("org.flywaydb:flyway-core:9.18.0")
     // postgres
     runtimeOnly("org.postgresql:postgresql")
+
+
+    // coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
+
     // test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

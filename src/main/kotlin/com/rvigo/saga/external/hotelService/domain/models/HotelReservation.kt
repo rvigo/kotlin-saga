@@ -22,5 +22,5 @@ data class HotelReservation(
     @Column
     val cpf: String) {
 
-    enum class Status { PENDING, CONFIRMED, CANCELED }
+    enum class Status { PENDING, CONFIRMED, CANCELED, FAILED }
 }

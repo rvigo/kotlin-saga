@@ -33,7 +33,7 @@ data class Trip(
     }
 
     enum class TripStatus {
-        PENDING, CONFIRMED, CANCELED, REJECTED
+        PENDING, CONFIRMED, CANCELED, REJECTED, FAILED
     }
 }
 
