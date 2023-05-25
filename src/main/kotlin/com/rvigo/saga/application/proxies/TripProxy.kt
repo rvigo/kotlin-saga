@@ -2,6 +2,7 @@ package com.rvigo.saga.application.proxies
 
 import com.rvigo.saga.external.tripService.application.listeners.commands.CompensateCreateTripCommand
 import com.rvigo.saga.external.tripService.application.listeners.commands.CreateTripCommand
+import com.rvigo.saga.external.tripService.application.listeners.commands.ConfirmTripCommand
 import com.rvigo.saga.infra.proxies.TripProxy
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Component
@@ -14,5 +15,9 @@ class TripProxy(private val publisher: ApplicationEventPublisher) : TripProxy {
 
     override fun compensate(compensateCreateTripCommand: CompensateCreateTripCommand) {
         publisher.publishEvent(compensateCreateTripCommand)
+    }
+
+    override fun confirmTrip(confirmTripCommand: ConfirmTripCommand) {
+        publisher.publishEvent(confirmTripCommand)
     }
 }

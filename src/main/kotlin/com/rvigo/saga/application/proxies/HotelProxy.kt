@@ -1,6 +1,7 @@
 package com.rvigo.saga.application.proxies
 
 import com.rvigo.saga.external.hotelService.application.listeners.commands.CompensateCreateReservationCommand
+import com.rvigo.saga.external.hotelService.application.listeners.commands.ConfirmReservationCommand
 import com.rvigo.saga.external.hotelService.application.listeners.commands.CreateReservationCommand
 import com.rvigo.saga.infra.proxies.HotelProxy
 import org.springframework.context.ApplicationEventPublisher
@@ -14,5 +15,9 @@ class HotelProxy(private val publisher: ApplicationEventPublisher) : HotelProxy 
 
     override fun compensate(compensateCreateReservationCommand: CompensateCreateReservationCommand) {
         publisher.publishEvent(compensateCreateReservationCommand)
+    }
+
+    override fun confirm(confirmReservationCommand: ConfirmReservationCommand) {
+        publisher.publishEvent(confirmReservationCommand)
     }
 }

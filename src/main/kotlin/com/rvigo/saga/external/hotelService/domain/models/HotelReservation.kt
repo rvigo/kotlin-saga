@@ -12,7 +12,7 @@ import java.util.UUID
 
 @Entity
 @Table(name = "hotel_reservation")
-class HotelReservation(
+data class HotelReservation(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     var id: UUID? = null,

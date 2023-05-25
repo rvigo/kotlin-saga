@@ -18,7 +18,7 @@ data class Trip(
     var id: UUID? = null,
 
     @Column(name = "hotel_reservation_id")
-    var hotelCode: UUID? = null,
+    var hotelReservationId: UUID? = null,
 
     @Column
     @Enumerated(EnumType.STRING)
@@ -27,18 +27,13 @@ data class Trip(
     @Column
     var cpf: String
 ) {
-    fun approveTrip() {
-        if (this.status != TripStatus.CANCELED)
-            this.status = TripStatus.APPROVED
-    }
-
     fun cancel() {
-        if (this.status != TripStatus.APPROVED)
+        if (this.status != TripStatus.CONFIRMED)
             this.status = TripStatus.CANCELED
     }
 
     enum class TripStatus {
-        PENDING, APPROVED, CANCELED, REJECTED
+        PENDING, CONFIRMED, CANCELED, REJECTED
     }
 }
 
