@@ -21,7 +21,7 @@ class TripCommandListener(private val service: TripService) {
     @EventListener
     fun on(command: CompensateCreateTripCommand) {
         logger.info("${command.sagaId} - Got a compensation command: $command")
-        service.cancel(command.tripId)
+        service.cancel(command)
     }
 
     @EventListener

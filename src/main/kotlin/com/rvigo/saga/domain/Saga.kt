@@ -45,5 +45,6 @@ data class Saga(
 
     fun updateReservationId(reservationId: UUID?) = this.copy(hotelReservationId = reservationId)
 
+    // TODO event sourcing?????
     enum class Status { STARTED, COMPLETED, COMPENSATING, COMPENSATED }
 }

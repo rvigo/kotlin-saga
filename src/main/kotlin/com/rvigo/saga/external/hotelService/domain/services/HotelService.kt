@@ -23,6 +23,10 @@ class HotelService(private val repository: HotelRepository,
     fun createReservation(command: CreateReservationCommand) = runCatching {
         logger.info("${command.sagaId} - Creating a new hotel reservation")
         val hotelReservation = HotelReservation(cpf = command.cpf)
+
+        // uncomment below to force the compensation scenario
+        // throw RuntimeException("Cannot create the reservation for cpf: ${command.cpf}")
+
         repository.save(hotelReservation)
     }.onSuccess {
         publisher.publishEvent(CreateReservationResponse(sagaId = command.sagaId, reservationId = it.id, status = Status.SUCCESS))
