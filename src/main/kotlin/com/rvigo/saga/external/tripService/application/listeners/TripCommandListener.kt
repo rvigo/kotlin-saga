@@ -16,10 +16,10 @@ class TripCommandListener(private val service: TripService) {
 
     @EventListener
     fun on(command: CreateTripCommand) {
-        logger.info("${command.sagaId} - Got a command: $command")
+        logger.info("Got a command: $command")
         runBlocking {
 
-            logger.info("${command.sagaId} - Trip service is \"busy\"...")
+            logger.info("Trip service is \"busy\"...")
             delay(5000)
             service.create(command)
         }
@@ -27,7 +27,7 @@ class TripCommandListener(private val service: TripService) {
 
     @EventListener
     fun on(command: CompensateCreateTripCommand) {
-        logger.info("${command.sagaId} - Got a compensation command: $command")
+        logger.info("Got a compensation command: $command")
         runBlocking {
             service.cancel(command)
         }
@@ -35,7 +35,7 @@ class TripCommandListener(private val service: TripService) {
 
     @EventListener
     fun on(command: ConfirmTripCommand) {
-        logger.info("${command.sagaId} - Got a command: $command")
+        logger.info("Got a command: $command")
         runBlocking {
             service.confirmTrip(command)
         }

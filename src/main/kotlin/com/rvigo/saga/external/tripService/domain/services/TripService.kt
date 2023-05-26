@@ -25,7 +25,7 @@ class TripService(private val repository: TripRepository,
 
     suspend fun create(command: CreateTripCommand) = runCatching {
         delay(2000)
-        logger.info("${command.sagaId} - Creating new Trip")
+        logger.info("Creating new Trip")
         val trip = Trip(cpf = command.cpf)
 
         // uncomment below to run a compensation scenario
@@ -41,7 +41,7 @@ class TripService(private val repository: TripRepository,
             tripStatus = it.status)
         )
     }.onFailure {
-        logger.error("${command.sagaId} - Something went wrong: $it")
+        logger.error("Something went wrong: $it")
         publisher.publishEvent(TripCreatedResponse(
             sagaId = command.sagaId,
             cpf = command.cpf,
@@ -67,7 +67,7 @@ class TripService(private val repository: TripRepository,
             ?: throw RuntimeException("Cannot find trip with id ${command.tripId}")
         val updatedTrip = trip.copy(hotelReservationId = command.hotelReservationId, status = TripStatus.CONFIRMED)
         repository.save(updatedTrip).also {
-            logger.info("${command.sagaId} - Trip ${it.id} confirmed!")
+            logger.info("Trip ${it.id} confirmed!")
         }
     }
 }

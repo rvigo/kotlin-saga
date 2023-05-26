@@ -24,7 +24,7 @@ class HotelService(private val repository: HotelRepository,
 
     suspend fun createReservation(command: CreateReservationCommand) = runCatching {
         delay(2000)
-        logger.info("${command.sagaId} - Creating a new hotel reservation")
+        logger.info("Creating a new hotel reservation")
         val hotelReservation = HotelReservation(cpf = command.cpf)
 
         // uncomment below to force the compensation scenario
@@ -50,10 +50,10 @@ class HotelService(private val repository: HotelRepository,
         val reservation = repository.findByIdOrNull(command.hotelReservationId)
             ?: throw RuntimeException("Cannot find reservation with id: ${command.hotelReservationId}")
 
-        logger.info("${command.sagaId} - Confirming Hotel Reservation with id: ${command.hotelReservationId}")
+        logger.info("Confirming Hotel Reservation with id: ${command.hotelReservationId}")
         val updatedReservation = reservation.copy(status = CONFIRMED)
         repository.save(updatedReservation).also {
-            logger.info("${command.sagaId} - Reservation with id ${it.id} confirmed")
+            logger.info("Reservation with id ${it.id} confirmed")
         }
     }
 }

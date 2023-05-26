@@ -10,6 +10,7 @@ import com.rvigo.saga.external.tripService.application.listeners.commands.Confir
 import com.rvigo.saga.external.tripService.application.listeners.commands.CreateTripCommand
 import com.rvigo.saga.external.tripService.application.listeners.commands.TripCanceledResponse
 import com.rvigo.saga.external.tripService.application.listeners.commands.TripCreatedResponse
+import com.rvigo.saga.infra.LoggerUtils
 import com.rvigo.saga.infra.eventStore.SagaEventStoreEntry
 import com.rvigo.saga.infra.eventStore.SagaEventStoreManager
 import com.rvigo.saga.infra.repositories.SagaRepository
@@ -30,14 +31,13 @@ class SagaManager(private val sagaRepository: SagaRepository,
 
     @EventListener
     fun on(command: CreateTripSagaCommand) {
-        // TODO include sagaId on MDC
-        val saga = Saga().save().also {
-            sagaEventStoreManager.updateEntry(SagaEventStoreEntry(sagaId = it.id, sagaStatus = it.status))
-            logger.info("A new saga has started $it")
-        }
+        withNewSaga {
+            this.save()
+            sagaEventStoreManager.updateEntry(SagaEventStoreEntry(sagaId = id, sagaStatus = status))
 
-        // first saga step
-        tripProxy.create(CreateTripCommand(sagaId = saga.id, cpf = command.cpf))
+            // first saga step
+            tripProxy.create(CreateTripCommand(sagaId = id, cpf = command.cpf))
+        }
     }
 
     // second saga step
@@ -52,7 +52,7 @@ class SagaManager(private val sagaRepository: SagaRepository,
                     tripId = response.tripId,
                     tripStatus = response.tripStatus)
                 sagaEventStoreManager.updateEntry(entry)
-                logger.info("${saga.id} - Saga updated! Creating a reservation")
+                logger.info("Saga updated! Creating a reservation")
                 hotelProxy.create(CreateReservationCommand(response.sagaId, response.cpf))
             }
         } else {
@@ -83,8 +83,8 @@ class SagaManager(private val sagaRepository: SagaRepository,
                     hotelReservationId = response.reservationId,
                     hotelReservationStatus = response.reservationStatus)
             )
-            logger.info("${saga.id} - Saga completed")
-            logger.info("${saga.id} - Sending \"confirm\" commands to Saga participants")
+            logger.info("Saga completed")
+            logger.info("Sending \"confirm\" commands to Saga participants")
             hotelProxy.confirm(ConfirmReservationCommand(
                 sagaId = updatedSaga.id,
                 hotelReservationId = updatedSaga.hotelReservationId!!)
@@ -120,7 +120,7 @@ class SagaManager(private val sagaRepository: SagaRepository,
     fun on(response: TripCanceledResponse) {
         val saga = getSaga(response.sagaId)
         saga.markAsCompensated().also {
-            logger.info("${it.id} - Saga marked as compensated")
+            logger.info("Saga marked as compensated")
         }
     }
 
@@ -129,4 +129,11 @@ class SagaManager(private val sagaRepository: SagaRepository,
 
 
     private fun Saga.save() = sagaRepository.save(this)
+
+    fun <T> withNewSaga(block: Saga.() -> T): T {
+        val saga = Saga()
+        logger.info("A new saga has started")
+        LoggerUtils.putSagaIdIntoMdc(saga.id)
+        return block(saga)
+    }
 }
