@@ -42,27 +42,28 @@ class SagaManager(private val sagaRepository: SagaRepository,
     // second saga step
     @EventListener
     fun on(response: TripCreatedResponse) {
-        val saga = getSaga(response.sagaId)
-        if (response.isSuccess()) {
-            saga.updateTripId(response.tripId).save().also {
-                val entry = SagaEventStoreEntry(
-                    sagaId = it.id,
-                    sagaStatus = it.status,
-                    tripId = response.tripId,
-                    tripStatus = response.tripStatus)
-                sagaEventStoreManager.updateEntry(entry)
-                logger.info("Saga updated! Creating a reservation")
-                hotelProxy.create(CreateReservationCommand(response.sagaId, response.cpf))
-            }
-        } else {
-            // since this is the first step, there is nothing to compensate
-            saga.markAsCompensated().save().also {
-                sagaEventStoreManager.updateEntry(
-                    SagaEventStoreEntry(
+        withSaga(response.sagaId) {
+            if (response.isSuccess()) {
+                this.updateTripId(response.tripId).save().also {
+                    val entry = SagaEventStoreEntry(
                         sagaId = it.id,
-                        sagaStatus = it.status
+                        sagaStatus = it.status,
+                        tripId = response.tripId,
+                        tripStatus = response.tripStatus)
+                    sagaEventStoreManager.updateEntry(entry)
+                    logger.info("Saga updated! Creating a reservation")
+                    hotelProxy.create(CreateReservationCommand(response.sagaId, response.cpf))
+                }
+            } else {
+                // since this is the first step, there is nothing to compensate
+                this.markAsCompensated().save().also {
+                    sagaEventStoreManager.updateEntry(
+                        SagaEventStoreEntry(
+                            sagaId = it.id,
+                            sagaStatus = it.status
+                        )
                     )
-                )
+                }
             }
         }
     }
@@ -70,56 +71,56 @@ class SagaManager(private val sagaRepository: SagaRepository,
     // saga third step
     @EventListener
     fun on(response: CreateReservationResponse) {
-        val saga = getSaga(response.sagaId)
-        if (response.isSuccess()) {
-            val updatedSaga = saga
-                .updateReservationId(response.reservationId)
-                .markAsCompleted()
-            sagaEventStoreManager.updateEntry(
-                SagaEventStoreEntry(
-                    sagaId = updatedSaga.id,
-                    sagaStatus = updatedSaga.status,
-                    hotelReservationId = response.reservationId,
-                    hotelReservationStatus = response.reservationStatus)
-            )
-            logger.info("Saga completed")
-            logger.info("Sending \"confirm\" commands to Saga participants")
-            hotelProxy.confirm(ConfirmReservationCommand(
-                sagaId = updatedSaga.id,
-                hotelReservationId = updatedSaga.hotelReservationId!!)
-            )
-            tripProxy.confirmTrip(
-                /*
-                 * this proxy interaction could make the "trip service" emit a "ConfirmConfirmTripCommand"
-                 * and trigger the SagaManager to update the Status at the Event Store,
-                 * but since it's a study case, we will not update any FAILED or CONFIRMED events.
-                 * Let's keep it simple ok?
-                 */
-                ConfirmTripCommand(
-                    sagaId = updatedSaga.id,
-                    tripId = updatedSaga.tripId!!,
-                    hotelReservationId = response.reservationId!!)
-            )
-        } else {
-            saga.markAsCompensating().save().also {
+        withSaga(response.sagaId) {
+            if (response.isSuccess()) {
+                val updatedSaga = this.updateReservationId(response.reservationId).markAsCompleted()
                 sagaEventStoreManager.updateEntry(
                     SagaEventStoreEntry(
-                        sagaId = it.id,
-                        sagaStatus = it.status,
-                        hotelReservationStatus = response.reservationStatus,
-                        hotelReservationId = response.reservationId)
+                        sagaId = updatedSaga.id,
+                        sagaStatus = updatedSaga.status,
+                        hotelReservationId = response.reservationId,
+                        hotelReservationStatus = response.reservationStatus)
                 )
+                logger.info("Saga completed")
+                logger.info("Sending \"confirm\" commands to Saga participants")
+                hotelProxy.confirm(ConfirmReservationCommand(
+                    sagaId = updatedSaga.id,
+                    hotelReservationId = updatedSaga.hotelReservationId!!)
+                )
+                tripProxy.confirmTrip(
+                    /*
+                     * this proxy interaction could make the "trip service" emit a "ConfirmConfirmTripCommand"
+                     * and trigger the SagaManager to update the Status at the Event Store,
+                     * but since it's a study case, we will not update any FAILED or CONFIRMED events.
+                     * Let's keep it simple ok?
+                     */
+                    ConfirmTripCommand(
+                        sagaId = updatedSaga.id,
+                        tripId = updatedSaga.tripId!!,
+                        hotelReservationId = response.reservationId!!)
+                )
+            } else {
+                this.markAsCompensating().save().also {
+                    sagaEventStoreManager.updateEntry(
+                        SagaEventStoreEntry(
+                            sagaId = it.id,
+                            sagaStatus = it.status,
+                            hotelReservationStatus = response.reservationStatus,
+                            hotelReservationId = response.reservationId)
+                    )
+                }
+                tripProxy.compensate(CompensateCreateTripCommand(sagaId = id, tripId = tripId!!))
             }
-            tripProxy.compensate(CompensateCreateTripCommand(sagaId = saga.id, tripId = saga.tripId!!))
         }
     }
 
     // first compensation response
     @EventListener
     fun on(response: TripCanceledResponse) {
-        val saga = getSaga(response.sagaId)
-        saga.markAsCompensated().also {
-            logger.info("Saga marked as compensated")
+        withSaga(response.sagaId) {
+            this.markAsCompensated().also {
+                logger.info("Saga marked as compensated")
+            }
         }
     }
 
@@ -129,10 +130,15 @@ class SagaManager(private val sagaRepository: SagaRepository,
 
     private fun Saga.save() = sagaRepository.save(this)
 
-    fun <T> withNewSaga(block: Saga.() -> T): T {
+    private fun <T> withNewSaga(block: Saga.() -> T): T {
         val saga = Saga().save()
         LoggerUtils.putSagaIdIntoMdc(saga.id)
         logger.info("A new saga has started")
+        return block(saga)
+    }
+
+    private fun <T> withSaga(sagaId: UUID, block: Saga.() -> T): T {
+        val saga = getSaga(sagaId)
         return block(saga)
     }
 }
