@@ -32,7 +32,6 @@ class SagaManager(private val sagaRepository: SagaRepository,
     @EventListener
     fun on(command: CreateTripSagaCommand) {
         withNewSaga {
-            this.save()
             sagaEventStoreManager.updateEntry(SagaEventStoreEntry(sagaId = id, sagaStatus = status))
 
             // first saga step
@@ -131,9 +130,9 @@ class SagaManager(private val sagaRepository: SagaRepository,
     private fun Saga.save() = sagaRepository.save(this)
 
     fun <T> withNewSaga(block: Saga.() -> T): T {
-        val saga = Saga()
-        logger.info("A new saga has started")
+        val saga = Saga().save()
         LoggerUtils.putSagaIdIntoMdc(saga.id)
+        logger.info("A new saga has started")
         return block(saga)
     }
 }
