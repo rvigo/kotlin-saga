@@ -38,79 +38,79 @@ curl -X POST -H "Content-Type: application/json" -d '{"cpf": "12345678901"}' htt
 └── main
     ├── kotlin
     │     └── com
-    │       └── rvigo
-    │           └── saga
-    │               ├── SagaApplication.kt
-    │               ├── application
-    │               │   ├── controllers
-    │               │   │   ├── SagaController.kt
-    │               │   │   └── dtos
-    │               │   │       └── SagaDTO.kt
-    │               │   └── proxies
-    │               │       ├── HotelProxy.kt
-    │               │       └── TripProxy.kt
-    │               ├── domain
-    │               │   ├── CreateTripSagaCommand.kt
-    │               │   ├── Saga.kt
-    │               │   └── SagaManager.kt
-    │               ├── external
-    │               │   ├── hotelService
-    │               │   │   ├── application
-    │               │   │   │   └── listeners
-    │               │   │   │       ├── HotelCommandListener.kt
-    │               │   │   │       └── commands
-    │               │   │   │           ├── CompensateCreateReservationCommand.kt
-    │               │   │   │           ├── CompensateCreateReservationResponse.kt
-    │               │   │   │           ├── ConfirmReservationCommand.kt
-    │               │   │   │           ├── CreateReservationCommand.kt
-    │               │   │   │           └── CreateReservationResponse.kt
-    │               │   │   ├── domain
-    │               │   │   │   ├── models
-    │               │   │   │   │   └── HotelReservation.kt
-    │               │   │   │   └── services
-    │               │   │   │       └── HotelService.kt
-    │               │   │   └── infra
-    │               │   │       └── repositories
-    │               │   │           └── HotelRepository.kt
-    │               │   └── tripService
-    │               │       ├── application
-    │               │       │   └── listeners
-    │               │       │       ├── TripCommandListener.kt
-    │               │       │       └── commands
-    │               │       │           ├── CompensateCreateTripCommand.kt
-    │               │       │           ├── CompensateCreateTripResponse.kt
-    │               │       │           ├── ConfirmTripCommand.kt
-    │               │       │           ├── CreateTripCommand.kt
-    │               │       │           ├── TripCanceledResponse.kt
-    │               │       │           └── TripCreatedResponse.kt
-    │               │       ├── domain
-    │               │       │   ├── models
-    │               │       │   │   └── Trip.kt
-    │               │       │   └── services
-    │               │       │       └── TripService.kt
-    │               │       └── infra
-    │               │           └── repositories
-    │               │               └── TripRepository.kt
-    │               └── infra
-    │                   ├── LoggerUtils.kt
-    │                   ├── eventStore
-    │                   │   ├── SagaEventStoreEntry.kt
-    │                   │   ├── SagaEventStoreManager.kt
-    │                   │   └── SagaEventStoreRepository.kt
-    │                   ├── proxies
-    │                   │   ├── HotelProxy.kt
-    │                   │   └── TripProxy.kt
-    │                   └── repositories
-    │                       └── SagaRepository.kt
+    │       └── rvigo
+    │           └── saga
+    │               ├── SagaApplication.kt
+    │               ├── application
+    │               │   ├── controllers
+    │               │   │   ├── SagaController.kt
+    │               │   │   └── dtos
+    │               │   │       └── SagaDTO.kt
+    │               │   └── proxies
+    │               │       ├── HotelProxy.kt
+    │               │       └── TripProxy.kt
+    │               ├── domain
+    │               │   ├── CreateTripSagaCommand.kt
+    │               │   ├── Saga.kt
+    │               │   └── SagaManager.kt
+    │               ├── external
+    │               │   ├── hotelService
+    │               │   │   ├── application
+    │               │   │   │   └── listeners
+    │               │   │   │       ├── HotelCommandListener.kt
+    │               │   │   │       └── commands
+    │               │   │   │           ├── CompensateCreateReservationCommand.kt
+    │               │   │   │           ├── CompensateCreateReservationResponse.kt
+    │               │   │   │           ├── ConfirmReservationCommand.kt
+    │               │   │   │           ├── CreateReservationCommand.kt
+    │               │   │   │           └── CreateReservationResponse.kt
+    │               │   │   ├── domain
+    │               │   │   │   ├── models
+    │               │   │   │   │   └── HotelReservation.kt
+    │               │   │   │   └── services
+    │               │   │   │       └── HotelService.kt
+    │               │   │   └── infra
+    │               │   │       └── repositories
+    │               │   │           └── HotelRepository.kt
+    │               │   └── tripService
+    │               │       ├── application
+    │               │       │   └── listeners
+    │               │       │       ├── TripCommandListener.kt
+    │               │       │       └── commands
+    │               │       │           ├── CompensateCreateTripCommand.kt
+    │               │       │           ├── CompensateCreateTripResponse.kt
+    │               │       │           ├── ConfirmTripCommand.kt
+    │               │       │           ├── CreateTripCommand.kt
+    │               │       │           ├── TripCanceledResponse.kt
+    │               │       │           └── TripCreatedResponse.kt
+    │               │       ├── domain
+    │               │       │   ├── models
+    │               │       │   │   └── Trip.kt
+    │               │       │   └── services
+    │               │       │       └── TripService.kt
+    │               │       └── infra
+    │               │           └── repositories
+    │               │               └── TripRepository.kt
+    │               └── infra
+    │                   ├── LoggerUtils.kt
+    │                   ├── eventStore
+    │                   │   ├── SagaEventStoreEntry.kt
+    │                   │   ├── SagaEventStoreManager.kt
+    │                   │   └── SagaEventStoreRepository.kt
+    │                   ├── proxies
+    │                   │   ├── HotelProxy.kt
+    │                   │   └── TripProxy.kt
+    │                   └── repositories
+    │                       └── SagaRepository.kt
     └── resources
         ├── application.yaml
         ├── db
-        │   └── migration
-        │       ├── V1__init.sql
-        │       ├── V2__saga_trip_and_reservation_id.sql
-        │       ├── V3__event_store.sql
-        │       ├── V4__drop_default_id.sql
-        │       └── V5__drop_default_timestamp.sql
+        │   └── migration
+        │       ├── V1__init.sql
+        │       ├── V2__saga_trip_and_reservation_id.sql
+        │       ├── V3__event_store.sql
+        │       ├── V4__drop_default_id.sql
+        │       └── V5__drop_default_timestamp.sql
         └── logback.xml
 ```
 
