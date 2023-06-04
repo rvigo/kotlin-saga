@@ -10,6 +10,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 import java.util.UUID
 
+
 @Entity
 @Table(name = "hotel_reservation")
 data class HotelReservation(
@@ -20,7 +21,7 @@ data class HotelReservation(
     @Enumerated(EnumType.STRING)
     var status: Status = Status.PENDING,
     @Column
-    val cpf: String) {
-
+    val cpf: String
+) {
     enum class Status { PENDING, CONFIRMED, CANCELED, FAILED }
 }

@@ -19,8 +19,10 @@ import org.springframework.transaction.annotation.Transactional
 
 @Transactional(propagation = Propagation.REQUIRES_NEW)
 @Service
-class TripService(private val repository: TripRepository,
-                  private val publisher: ApplicationEventPublisher) {
+class TripService(
+    private val repository: TripRepository,
+    private val publisher: ApplicationEventPublisher
+) {
     private val logger by logger()
 
     suspend fun create(command: CreateTripCommand) = runCatching {
@@ -33,20 +35,24 @@ class TripService(private val repository: TripRepository,
 
         repository.save(trip)
     }.onSuccess {
-        publisher.publishEvent(TripCreatedResponse(
-            sagaId = command.sagaId,
-            cpf = command.cpf,
-            responseStatus = Status.SUCCESS,
-            tripId = it.id,
-            tripStatus = it.status)
+        publisher.publishEvent(
+            TripCreatedResponse(
+                sagaId = command.sagaId,
+                cpf = command.cpf,
+                responseStatus = Status.SUCCESS,
+                tripId = it.id,
+                tripStatus = it.status
+            )
         )
     }.onFailure {
         logger.error("Something went wrong: $it")
-        publisher.publishEvent(TripCreatedResponse(
-            sagaId = command.sagaId,
-            cpf = command.cpf,
-            responseStatus = Status.FAILURE,
-            tripStatus = TripStatus.FAILED)
+        publisher.publishEvent(
+            TripCreatedResponse(
+                sagaId = command.sagaId,
+                cpf = command.cpf,
+                responseStatus = Status.FAILURE,
+                tripStatus = TripStatus.FAILED
+            )
         )
     }
 
@@ -57,7 +63,13 @@ class TripService(private val repository: TripRepository,
             ?: throw RuntimeException("Cannot find trip with id ${command.tripId}")
         trip.cancel()
         repository.save(trip).also {
-            publisher.publishEvent(TripCanceledResponse(sagaId = command.sagaId, tripId = command.tripId, tripStatus = it.status))
+            publisher.publishEvent(
+                TripCanceledResponse(
+                    sagaId = command.sagaId,
+                    tripId = command.tripId,
+                    tripStatus = it.status
+                )
+            )
         }
     }
 

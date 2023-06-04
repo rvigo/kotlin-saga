@@ -10,6 +10,7 @@ import kotlinx.coroutines.runBlocking
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
+
 @Component
 class HotelCommandListener(private val service: HotelService) {
     private val logger by logger()

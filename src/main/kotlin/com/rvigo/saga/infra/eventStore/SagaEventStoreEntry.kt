@@ -41,13 +41,11 @@ data class SagaEventStoreEntry(
     @CreationTimestamp
     val createAt: LocalDateTime = LocalDateTime.now(),
 ) {
-    fun mergeWithLastEntry(lastEntry: SagaEventStoreEntry): SagaEventStoreEntry {
-        return this.copy(
-            id = UUID.randomUUID(),
-            tripId = this.tripId ?: lastEntry.tripId,
-            tripStatus = this.tripStatus ?: lastEntry.tripStatus,
-            hotelReservationId = this.hotelReservationId ?: lastEntry.hotelReservationId,
-            hotelReservationStatus = this.hotelReservationStatus ?: lastEntry.hotelReservationStatus
-        )
-    }
+    fun mergeWithLastEntry(lastEntry: SagaEventStoreEntry) = this.copy(
+        id = UUID.randomUUID(),
+        tripId = this.tripId ?: lastEntry.tripId,
+        tripStatus = this.tripStatus ?: lastEntry.tripStatus,
+        hotelReservationId = this.hotelReservationId ?: lastEntry.hotelReservationId,
+        hotelReservationStatus = this.hotelReservationStatus ?: lastEntry.hotelReservationStatus
+    )
 }
