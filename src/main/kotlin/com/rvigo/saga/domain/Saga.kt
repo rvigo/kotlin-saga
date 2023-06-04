@@ -1,8 +1,9 @@
 package com.rvigo.saga.domain
 
+import com.rvigo.saga.domain.Saga.Status.STARTED
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.EnumType
+import jakarta.persistence.EnumType.STRING
 import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -18,19 +19,42 @@ data class Saga(
     val id: UUID = UUID.randomUUID(),
 
     @Column
-    @Enumerated(EnumType.STRING)
-    var status: Status = Status.STARTED,
+    @Enumerated(STRING)
+    var status: Status = STARTED,
 
     @Column(name = "trip_id")
     var tripId: UUID? = null,
     @Column(name = "hotel_reservation_id")
     var hotelReservationId: UUID? = null,
 ) {
-    fun markAsCompensated() = copy(status = Status.COMPENSATED)
-    fun markAsCompensating() = copy(status = Status.COMPENSATING)
-    fun markAsCompleted() = copy(status = Status.COMPLETED)
+    fun markAsCompensated() = changeStatusTo(status = Status.COMPENSATED)
+    fun markAsCompensating() = changeStatusTo(status = Status.COMPENSATING)
+    fun markAsCompleted() = changeStatusTo(status = Status.COMPLETED)
     fun updateTripId(tripId: UUID?) = copy(tripId = tripId)
     fun updateReservationId(reservationId: UUID?) = copy(hotelReservationId = reservationId)
 
-    enum class Status { STARTED, COMPLETED, COMPENSATING, COMPENSATED }
+    private fun changeStatusTo(status: Status): Saga = if (status in this.status.possibleChanges()) {
+        copy(status = status)
+    } else {
+        throw Status.InvalidStatusChangeAttempt(from = this.status, to = status)
+    }
+
+    enum class Status {
+        STARTED {
+            override fun possibleChanges() = setOf(COMPLETED, COMPENSATING)
+        },
+        COMPLETED {
+            override fun possibleChanges() = emptySet<Status>()
+        },
+        COMPENSATING {
+            override fun possibleChanges() = setOf(COMPENSATING)
+        },
+        COMPENSATED {
+            override fun possibleChanges() = emptySet<Status>()
+        };
+
+        abstract fun possibleChanges(): Set<Status>
+        data class InvalidStatusChangeAttempt(val from: Status, val to: Status) :
+            RuntimeException("Cannot change the Saga status from $from to $to")
+    }
 }
