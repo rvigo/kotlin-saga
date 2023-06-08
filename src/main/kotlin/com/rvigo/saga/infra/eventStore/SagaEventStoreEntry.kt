@@ -1,6 +1,7 @@
 package com.rvigo.saga.infra.eventStore
 
 import com.rvigo.saga.domain.Saga
+import com.rvigo.saga.external.flightService.domain.models.FlightReservation
 import com.rvigo.saga.external.hotelService.domain.models.HotelReservation
 import com.rvigo.saga.external.tripService.domain.models.Trip
 import jakarta.persistence.Column
@@ -22,21 +23,35 @@ data class SagaEventStoreEntry(
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "event_id")
     val id: UUID = UUID.randomUUID(),
+
     @Column(name = "saga_id")
     val sagaId: UUID,
+
     @Column(name = "saga_status")
     @Enumerated(EnumType.STRING)
     val sagaStatus: Saga.Status,
+
     @Column(name = "trip_id")
     val tripId: UUID? = null,
+
     @Column(name = "trip_status")
     @Enumerated(EnumType.STRING)
     val tripStatus: Trip.TripStatus? = null,
+
     @Column(name = "hotel_reservation_id")
     val hotelReservationId: UUID? = null,
+
     @Column(name = "hotel_reservation_status")
     @Enumerated(EnumType.STRING)
     val hotelReservationStatus: HotelReservation.Status? = null,
+
+    @Column(name = "flight_reservation_id")
+    val flightReservationId: UUID? = null,
+
+    @Column(name = "flight_reservation_status")
+    @Enumerated(EnumType.STRING)
+    val flightReservationStatus: FlightReservation.Status? = null,
+    
     @Column(name = "created_at")
     @CreationTimestamp
     val createAt: LocalDateTime = LocalDateTime.now(),
@@ -46,6 +61,8 @@ data class SagaEventStoreEntry(
         tripId = this.tripId ?: lastEntry.tripId,
         tripStatus = this.tripStatus ?: lastEntry.tripStatus,
         hotelReservationId = this.hotelReservationId ?: lastEntry.hotelReservationId,
-        hotelReservationStatus = this.hotelReservationStatus ?: lastEntry.hotelReservationStatus
+        hotelReservationStatus = this.hotelReservationStatus ?: lastEntry.hotelReservationStatus,
+        flightReservationId = this.flightReservationId ?: lastEntry.flightReservationId,
+        flightReservationStatus = this.flightReservationStatus ?: lastEntry.flightReservationStatus
     )
 }

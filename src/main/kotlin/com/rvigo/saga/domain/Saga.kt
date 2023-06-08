@@ -24,14 +24,19 @@ data class Saga(
 
     @Column(name = "trip_id")
     var tripId: UUID? = null,
+    
     @Column(name = "hotel_reservation_id")
     var hotelReservationId: UUID? = null,
+
+    @Column(name = "flight_reservation_id")
+    var flightReservationId: UUID? = null
 ) {
     fun markAsCompensated() = changeStatusTo(status = Status.COMPENSATED)
     fun markAsCompensating() = changeStatusTo(status = Status.COMPENSATING)
     fun markAsCompleted() = changeStatusTo(status = Status.COMPLETED)
     fun updateTripId(tripId: UUID?) = copy(tripId = tripId)
-    fun updateReservationId(reservationId: UUID?) = copy(hotelReservationId = reservationId)
+    fun updateHotelReservationId(reservationId: UUID?) = copy(hotelReservationId = reservationId)
+    fun updateFlightReservationId(reservationId: UUID?) = copy(flightReservationId = reservationId)
 
     private fun changeStatusTo(status: Status): Saga = if (status in this.status.possibleChanges()) {
         copy(status = status)
