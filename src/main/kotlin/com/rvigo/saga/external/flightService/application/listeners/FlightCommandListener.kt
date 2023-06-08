@@ -19,8 +19,7 @@ class FlightCommandListener(private val service: FlightReservationService) {
     fun on(command: CreateFlightReservationCommand) {
         logger.info("${command.sagaId} - Got a new command: $command")
         runBlocking {
-            logger.info("Hotel service is \"busy\"...")
-            delay(8000)
+            delay(700)
             service.createFlightReservation(command)
         }
     }
@@ -28,7 +27,7 @@ class FlightCommandListener(private val service: FlightReservationService) {
     @EventListener
     fun on(command: CompensateCreateFlightReservationCommand) {
         logger.info("Got a new command: $command")
-        //TODO service.cancelReservation
+        runBlocking { service.cancelReservation(command) }
     }
 
     @EventListener
