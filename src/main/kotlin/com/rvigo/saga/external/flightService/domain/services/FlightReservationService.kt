@@ -6,15 +6,15 @@ import com.rvigo.saga.external.flightService.application.listeners.commands.Crea
 import com.rvigo.saga.external.flightService.application.listeners.commands.CreateFlightReservationResponse
 import com.rvigo.saga.external.flightService.domain.models.FlightReservation
 import com.rvigo.saga.external.flightService.infra.repositories.FlightRepository
+import com.rvigo.saga.infra.events.BaseEvent
+import com.rvigo.saga.infra.events.BaseResponse
 import com.rvigo.saga.logger
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
-
-@Transactional(propagation = Propagation.REQUIRES_NEW)
+@Transactional
 @Service
 class FlightReservationService(
     private val repository: FlightRepository,
@@ -22,33 +22,35 @@ class FlightReservationService(
 ) {
     private val logger by logger()
 
-    suspend fun createFlightReservation(command: CreateFlightReservationCommand) = runCatching {
-        logger.info("Creating a new flight reservation")
-        val hotelReservation = FlightReservation(cpf = command.cpf)
+    fun createFlightReservation(command: CreateFlightReservationCommand) {
+        runCatching {
+            logger.info("Creating a new flight reservation: $command")
+            val flightReservation = FlightReservation(cpf = command.cpf)
 
-        // uncomment below to force the compensation scenario
-        // throw RuntimeException("Cannot create the reservation for cpf: ${command.cpf}")
-        repository.save(hotelReservation)
-    }.onSuccess {
-        publisher.publishEvent(
-            CreateFlightReservationResponse(
-                sagaId = command.sagaId,
-                status = CreateFlightReservationResponse.Status.SUCCESS,
-                reservationStatus = it.status,
-                reservationId = it.id
+            // uncomment below to force the compensation scenario
+            // throw RuntimeException("Cannot create the reservation for cpf: ${command.cpf}")
+            repository.save(flightReservation)
+        }.onSuccess {
+            notify(
+                CreateFlightReservationResponse(
+                    sagaId = command.sagaId,
+                    status = BaseResponse.Status.SUCCESS,
+                    reservationStatus = it.status,
+                    reservationId = it.id
+                )
             )
-        )
-    }.onFailure {
-        logger.error("${command.sagaId} - Something went wrong: $it")
-        publisher.publishEvent(
-            CreateFlightReservationResponse(
-                sagaId = command.sagaId, status = CreateFlightReservationResponse.Status.FAILURE,
-                reservationStatus = FlightReservation.Status.FAILED
+        }.onFailure {
+            logger.error("${command.sagaId} - Something went wrong: $it")
+            notify(
+                CreateFlightReservationResponse(
+                    sagaId = command.sagaId, status = BaseResponse.Status.FAILURE,
+                    reservationStatus = FlightReservation.Status.FAILED
+                )
             )
-        )
+        }
     }
 
-    suspend fun cancelReservation(command: CompensateCreateFlightReservationCommand) {
+    fun cancelReservation(command: CompensateCreateFlightReservationCommand) {
         val reservation = repository.findByIdOrNull(command.flightReservationId)
             ?: throw RuntimeException("Cannot find reservation with id: ${command.flightReservationId}")
 
@@ -59,7 +61,7 @@ class FlightReservationService(
         }
     }
 
-    suspend fun confirmFlightReservation(command: ConfirmFlightReservationCommand) {
+    fun confirmFlightReservation(command: ConfirmFlightReservationCommand) {
         val reservation = repository.findByIdOrNull(command.flightReservationId)
             ?: throw RuntimeException("Cannot find reservation with id: ${command.flightReservationId}")
 
@@ -68,6 +70,11 @@ class FlightReservationService(
         repository.save(updatedReservation).also {
             logger.info("Reservation with id ${it.id} confirmed")
         }
+    }
+
+    fun notify(event: BaseEvent) {
+        logger.info("Publishing event: $event")
+        publisher.publishEvent(event)
     }
 }
 

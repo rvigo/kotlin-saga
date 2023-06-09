@@ -5,11 +5,8 @@ import com.rvigo.saga.external.hotelService.application.listeners.commands.Confi
 import com.rvigo.saga.external.hotelService.application.listeners.commands.CreateReservationCommand
 import com.rvigo.saga.external.hotelService.domain.services.HotelService
 import com.rvigo.saga.logger
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
-
 
 @Component
 class HotelCommandListener(private val service: HotelService) {
@@ -17,12 +14,8 @@ class HotelCommandListener(private val service: HotelService) {
 
     @EventListener
     fun on(command: CreateReservationCommand) {
-        logger.info("${command.sagaId} - Got a new command: $command")
-        runBlocking {
-            logger.info("Hotel service is \"busy\"...")
-            delay(8000)
-            service.createReservation(command)
-        }
+        logger.info("Got a new command: $command")
+        service.createReservation(command)
     }
 
     @EventListener
@@ -34,8 +27,6 @@ class HotelCommandListener(private val service: HotelService) {
     @EventListener
     fun on(command: ConfirmReservationCommand) {
         logger.info("Got a new command: $command")
-        runBlocking {
-            service.confirmReservation(command)
-        }
+        service.confirmReservation(command)
     }
 }

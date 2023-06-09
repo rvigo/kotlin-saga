@@ -14,10 +14,9 @@ import kotlinx.coroutines.delay
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
-@Transactional(propagation = Propagation.REQUIRES_NEW)
+@Transactional
 @Service
 class TripService(
     private val repository: TripRepository,
@@ -25,8 +24,7 @@ class TripService(
 ) {
     private val logger by logger()
 
-    suspend fun create(command: CreateTripCommand) = runCatching {
-        delay(2000)
+    fun create(command: CreateTripCommand) = runCatching {
         logger.info("Creating new Trip")
         val trip = Trip(cpf = command.cpf)
 

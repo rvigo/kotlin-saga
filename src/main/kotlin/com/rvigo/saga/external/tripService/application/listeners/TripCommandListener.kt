@@ -5,10 +5,10 @@ import com.rvigo.saga.external.tripService.application.listeners.commands.Confir
 import com.rvigo.saga.external.tripService.application.listeners.commands.CreateTripCommand
 import com.rvigo.saga.external.tripService.domain.services.TripService
 import com.rvigo.saga.logger
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
+
 
 @Component
 class TripCommandListener(private val service: TripService) {
@@ -17,12 +17,8 @@ class TripCommandListener(private val service: TripService) {
     @EventListener
     fun on(command: CreateTripCommand) {
         logger.info("Got a command: $command")
-        runBlocking {
 
-            logger.info("Trip service is \"busy\"...")
-            delay(5000)
-            service.create(command)
-        }
+        service.create(command)
     }
 
     @EventListener
