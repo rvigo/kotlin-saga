@@ -20,6 +20,9 @@ data class Trip(
     @Column(name = "hotel_reservation_id")
     var hotelReservationId: UUID? = null,
 
+    @Column(name = "flight_reservation_id")
+    var flightReservationId: UUID? = null,
+
     @Column
     @Enumerated(EnumType.STRING)
     var status: TripStatus = TripStatus.PENDING,
