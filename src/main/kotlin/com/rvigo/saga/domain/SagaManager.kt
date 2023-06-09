@@ -8,7 +8,6 @@ import com.rvigo.saga.external.flightService.application.listeners.commands.Crea
 import com.rvigo.saga.external.hotelService.application.listeners.commands.CreateHotelReservationResponse
 import com.rvigo.saga.external.hotelService.application.listeners.commands.CreateReservationCommand
 import com.rvigo.saga.external.tripService.application.listeners.commands.CreateTripCommand
-import com.rvigo.saga.external.tripService.application.listeners.commands.TripCanceledResponse
 import com.rvigo.saga.external.tripService.application.listeners.commands.TripCreatedResponse
 import com.rvigo.saga.external.tripService.application.listeners.commands.ifFailure
 import com.rvigo.saga.external.tripService.application.listeners.commands.ifSuccess
@@ -20,6 +19,7 @@ import com.rvigo.saga.infra.events.ifSuccess
 import com.rvigo.saga.infra.repositories.ParticipantRepository
 import com.rvigo.saga.infra.repositories.SagaRepository
 import com.rvigo.saga.logger
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.context.event.EventListener
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Component
@@ -35,11 +35,12 @@ class SagaManager(
     private val hotelProxy: HotelProxy,
     private val tripProxy: TripProxy,
     private val flightProxy: FlightProxy,
+    private val applicationEventPublisher: ApplicationEventPublisher
 ) {
     private val logger by logger()
 
     @EventListener
-    fun on(command: CreateTripSagaCommand) {
+    fun start(command: CreateTripSagaCommand) {
         val participants = buildParticipants().let { participantRepository.saveAll(it) }
         withNewSaga(participants) {
             sagaEventStoreManager.updateEntry(SagaEventStoreEntry(sagaId = id, sagaStatus = status))
@@ -54,7 +55,6 @@ class SagaManager(
         }
     }
 
-    // second saga step
     @EventListener
     fun on(response: TripCreatedResponse) {
         withSaga(response.sagaId) {
@@ -76,6 +76,7 @@ class SagaManager(
                         flightProxy.create(CreateFlightReservationCommand(response.sagaId, response.cpf))
                     }
                 }
+                applicationEventPublisher.publishEvent(SagaUpdatedEvent(this.id, Participant.ParticipantName.TRIP))
             }.ifFailure {
                 // since this is the first step, there is nothing to compensate
                 this.updateParticipant(
@@ -94,26 +95,25 @@ class SagaManager(
         }
     }
 
-    // saga third step
     @EventListener
     fun on(response: CreateHotelReservationResponse) {
         withSaga(response.sagaId) {
             response.ifSuccess {
-                val updatedSaga = this.updateParticipant(
+                this.updateParticipant(
                     Participant.ParticipantName.HOTEL,
                     response.reservationId,
                     Participant.Status.COMPLETED
-                )
-
-                updatedSaga.save()
-                sagaEventStoreManager.updateEntry(
-                    SagaEventStoreEntry(
-                        sagaId = updatedSaga.id,
-                        sagaStatus = updatedSaga.status,
-                        hotelReservationId = response.reservationId,
-                        hotelReservationStatus = response.reservationStatus
+                ).save().also {
+                    sagaEventStoreManager.updateEntry(
+                        SagaEventStoreEntry(
+                            sagaId = it.id,
+                            sagaStatus = it.status,
+                            hotelReservationId = response.reservationId,
+                            hotelReservationStatus = response.reservationStatus
+                        )
                     )
-                )
+                }
+                applicationEventPublisher.publishEvent(SagaUpdatedEvent(this.id, Participant.ParticipantName.HOTEL))
             }.ifFailure {
                 this.updateParticipant(
                     Participant.ParticipantName.HOTEL,
@@ -130,7 +130,6 @@ class SagaManager(
                     )
                 }
                 // TODO("notify failure")
-                // tripProxy.compensate(CompensateCreateTripCommand(sagaId = id, tripId = tripId!!))
             }
         }
     }
@@ -153,6 +152,7 @@ class SagaManager(
                         )
                     )
                 }
+                applicationEventPublisher.publishEvent(SagaUpdatedEvent(this.id, Participant.ParticipantName.FLIGHT))
             }.ifFailure {
                 this.updateParticipant(
                     Participant.ParticipantName.FLIGHT,
@@ -169,23 +169,28 @@ class SagaManager(
                     )
                 }
                 // TODO("notify failure")
-//                tripProxy.compensate(CompensateCreateTripCommand(sagaId = id, tripId = tripId!!))
             }
         }
     }
 
-    // first compensation response
     @EventListener
-    fun on(response: TripCanceledResponse) {
-        withSaga(response.sagaId) {
-            this.markAsCompensated().also {
-                logger.info("Saga marked as compensated")
+    fun validateSaga(sagaUpdatedEvent: SagaUpdatedEvent) {
+        withSaga(sagaUpdatedEvent.sagaId) {
+            logger.info("notified by ${sagaUpdatedEvent.from}")
+            if (this.participants.any { it.status != Participant.Status.COMPLETED }) {
+                logger.info("Saga is not completed")
+                // TODO nothing to do
+            } else if (this.participants.any { it.status == Participant.Status.COMPENSATING }) {
+                logger.warn("Saga is running the compensation flow")
+                // TODO send a compensation message to all completed participant
+            } else if (this.participants.all { it.status == Participant.Status.COMPLETED }) {
+                logger.info("Saga is completed")
+                // TODO marks the saga as completed
             }
         }
     }
 
-    fun onSagaCompletion() {
-
+//    fun onSagaCompletion() {
 //        logger.info("Saga completed")
 //        logger.info("Sending \"confirm\" commands to Saga participants")
 //        hotelProxy.confirm(
@@ -207,7 +212,7 @@ class SagaManager(
 //                hotelReservationId = response.reservationId!!
 //            )
 //        )
-    }
+//    }
 
     private fun getSaga(id: UUID) = sagaRepository.findByIdOrNull(id)
         ?: throw RuntimeException("Cannot find saga with id: $id")
@@ -222,7 +227,7 @@ class SagaManager(
 
     private fun <T> withSaga(sagaId: UUID, block: Saga.() -> T) = block(getSaga(sagaId))
 
-    // TODO should go to its own place?
+    // TODO should it go to its own place?
     private fun buildParticipants(): List<Participant> {
         val trip = Participant(name = Participant.ParticipantName.TRIP)
         val hotel = Participant(name = Participant.ParticipantName.HOTEL)
