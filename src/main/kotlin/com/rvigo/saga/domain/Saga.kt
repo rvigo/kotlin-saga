@@ -1,13 +1,17 @@
 package com.rvigo.saga.domain
 
 import com.rvigo.saga.domain.Saga.Status.STARTED
+import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType.STRING
 import jakarta.persistence.Enumerated
+import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import java.util.UUID
 
@@ -22,21 +26,24 @@ data class Saga(
     @Enumerated(STRING)
     var status: Status = STARTED,
 
-    @Column(name = "trip_id")
-    var tripId: UUID? = null,
-    
-    @Column(name = "hotel_reservation_id")
-    var hotelReservationId: UUID? = null,
-
-    @Column(name = "flight_reservation_id")
-    var flightReservationId: UUID? = null
+    @OneToMany(fetch = FetchType.LAZY, cascade = [CascadeType.ALL])
+    @JoinColumn(name = "saga_id")
+    val participants: MutableList<Participant> = mutableListOf()
 ) {
     fun markAsCompensated() = changeStatusTo(status = Status.COMPENSATED)
     fun markAsCompensating() = changeStatusTo(status = Status.COMPENSATING)
     fun markAsCompleted() = changeStatusTo(status = Status.COMPLETED)
-    fun updateTripId(tripId: UUID?) = copy(tripId = tripId)
-    fun updateHotelReservationId(reservationId: UUID?) = copy(hotelReservationId = reservationId)
-    fun updateFlightReservationId(reservationId: UUID?) = copy(flightReservationId = reservationId)
+
+    fun updateParticipant(
+        participantName: Participant.ParticipantName,
+        participantId: UUID? = null,
+        status: Participant.Status? = null
+    ): Saga {
+        val participant = this.participants.first { it.name == participantName }.update(participantId, status)
+        val participants = this.participants.filterNot { it.name == participantName }
+
+        return this.copy(participants = participants.plus(participant).toMutableList())
+    }
 
     private fun changeStatusTo(status: Status): Saga = if (status in this.status.possibleChanges()) {
         copy(status = status)
