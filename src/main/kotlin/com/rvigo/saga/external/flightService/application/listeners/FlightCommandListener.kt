@@ -5,7 +5,6 @@ import com.rvigo.saga.external.flightService.application.listeners.commands.Conf
 import com.rvigo.saga.external.flightService.application.listeners.commands.CreateFlightReservationCommand
 import com.rvigo.saga.external.flightService.domain.services.FlightReservationService
 import com.rvigo.saga.logger
-import kotlinx.coroutines.runBlocking
 import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 
@@ -22,14 +21,12 @@ class FlightCommandListener(private val service: FlightReservationService) {
     @EventListener
     fun on(command: CompensateCreateFlightReservationCommand) {
         logger.info("Got a new command: $command")
-        runBlocking { service.cancelReservation(command) }
+        service.cancelReservation(command)
     }
 
     @EventListener
     fun on(command: ConfirmFlightReservationCommand) {
         logger.info("Got a new command: $command")
-        runBlocking {
-            service.confirmFlightReservation(command)
-        }
+        service.confirmFlightReservation(command)
     }
 }

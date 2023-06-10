@@ -8,3 +8,16 @@ spring:
     properties:
       hibernate:
         format_sql: true
+cloud:
+  aws:
+    stack.auto: false
+    region:
+      static: us-east-1
+    credentials:
+      access-key: x
+      secret-key: x
+    endpoint: "http://localhost:4566"
+    sqs.queues:
+      start-saga: "saga-start-saga-command-queue"
+    sns.topics:
+      start-saga: "saga-start-saga-topic"

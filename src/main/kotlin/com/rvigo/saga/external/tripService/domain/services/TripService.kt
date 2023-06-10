@@ -10,7 +10,6 @@ import com.rvigo.saga.external.tripService.domain.models.Trip
 import com.rvigo.saga.external.tripService.domain.models.Trip.TripStatus
 import com.rvigo.saga.external.tripService.infra.repositories.TripRepository
 import com.rvigo.saga.logger
-import kotlinx.coroutines.delay
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -54,8 +53,7 @@ class TripService(
         )
     }
 
-    suspend fun cancel(command: CompensateCreateTripCommand) {
-        delay(2000)
+    fun cancel(command: CompensateCreateTripCommand) {
         logger.warn("Cancelling trip with id: ${command.tripId}")
         val trip = repository.findByIdOrNull(command.tripId)
             ?: throw RuntimeException("Cannot find trip with id ${command.tripId}")
@@ -71,8 +69,7 @@ class TripService(
         }
     }
 
-    suspend fun confirmTrip(command: ConfirmTripCommand) {
-        delay(2000)
+    fun confirmTrip(command: ConfirmTripCommand) {
         val trip = repository.findByIdOrNull(command.tripId)
             ?: throw RuntimeException("Cannot find trip with id ${command.tripId}")
         val updatedTrip = trip.copy(hotelReservationId = command.hotelReservationId, status = TripStatus.CONFIRMED)

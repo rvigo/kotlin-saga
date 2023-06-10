@@ -7,7 +7,6 @@ import com.rvigo.saga.external.flightService.application.listeners.commands.Crea
 import com.rvigo.saga.external.flightService.application.listeners.commands.CreateFlightReservationResponse
 import com.rvigo.saga.external.hotelService.application.listeners.commands.CreateHotelReservationResponse
 import com.rvigo.saga.external.hotelService.application.listeners.commands.CreateReservationCommand
-import com.rvigo.saga.external.tripService.application.listeners.commands.CreateTripCommand
 import com.rvigo.saga.external.tripService.application.listeners.commands.TripCreatedResponse
 import com.rvigo.saga.external.tripService.application.listeners.commands.ifFailure
 import com.rvigo.saga.external.tripService.application.listeners.commands.ifSuccess
@@ -19,9 +18,12 @@ import com.rvigo.saga.infra.events.ifSuccess
 import com.rvigo.saga.infra.repositories.ParticipantRepository
 import com.rvigo.saga.infra.repositories.SagaRepository
 import com.rvigo.saga.logger
+import org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS
+import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener
 import org.springframework.context.ApplicationEventPublisher
-import org.springframework.context.event.EventListener
 import org.springframework.data.repository.findByIdOrNull
+import org.springframework.messaging.handler.annotation.Headers
+import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -39,23 +41,25 @@ class SagaManager(
 ) {
     private val logger by logger()
 
-    @EventListener
-    fun start(command: CreateTripSagaCommand) {
-        val participants = buildParticipants().let { participantRepository.saveAll(it) }
-        withNewSaga(participants) {
-            sagaEventStoreManager.updateEntry(SagaEventStoreEntry(sagaId = id, sagaStatus = status))
+    @SqsListener("\${cloud.aws.sqs.queues.start-saga}", deletionPolicy = ON_SUCCESS)
+    fun start(@Payload message: String, @Headers headers: Map<String, Any>) {
+        logger.info("got headers: $headers")
+        logger.info("got message: $message")
+//        val participants = buildParticipants().let { participantRepository.saveAll(it) }
+//        withNewSaga(participants) {
+//            sagaEventStoreManager.updateEntry(SagaEventStoreEntry(sagaId = id, sagaStatus = status))
 
-            // first saga step
-            tripProxy.create(CreateTripCommand(sagaId = id, cpf = command.cpf)).also {
-                this.updateParticipant(
-                    participantName = Participant.ParticipantName.TRIP,
-                    status = Participant.Status.PROCESSING
-                ).save()
-            }
-        }
+        // first saga step
+//            tripProxy.create(CreateTripCommand(sagaId = id, cpf = command.cpf)).also {
+//                this.updateParticipant(
+//                    participantName = Participant.ParticipantName.TRIP,
+//                    status = Participant.Status.PROCESSING
+//                ).save()
+//            }
+//        }
     }
 
-    @EventListener
+    //    @EventListener
     fun on(response: TripCreatedResponse) {
         withSaga(response.sagaId) {
             response.ifSuccess {
@@ -95,7 +99,7 @@ class SagaManager(
         }
     }
 
-    @EventListener
+    //    @EventListener
     fun on(response: CreateHotelReservationResponse) {
         withSaga(response.sagaId) {
             response.ifSuccess {
@@ -134,7 +138,7 @@ class SagaManager(
         }
     }
 
-    @EventListener
+    //    @EventListener
     fun on(response: CreateFlightReservationResponse) {
         withSaga(response.sagaId) {
             response.ifSuccess {
@@ -173,7 +177,7 @@ class SagaManager(
         }
     }
 
-    @EventListener
+    //    @EventListener
     fun validateSaga(sagaUpdatedEvent: SagaUpdatedEvent) {
         withSaga(sagaUpdatedEvent.sagaId) {
             logger.info("notified by ${sagaUpdatedEvent.from}")

@@ -1,7 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "3.0.6"
+    id("org.springframework.boot") version "2.7.12"
     id("io.spring.dependency-management") version "1.1.0"
     kotlin("jvm") version "1.7.22"
     kotlin("plugin.spring") version "1.7.22"
@@ -16,6 +16,12 @@ repositories {
     mavenCentral()
 }
 
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2022.0.3")
+    }
+}
+
 dependencies {
     // spring
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
@@ -26,10 +32,11 @@ dependencies {
     // postgres
     runtimeOnly("org.postgresql:postgresql")
 
+    // aws
+    implementation("org.springframework.cloud:spring-cloud-starter-aws-messaging:2.2.6.RELEASE")
 
-    // coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
-
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
+    
     // test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }

@@ -8,7 +8,7 @@ import java.util.UUID
 
 @Repository
 interface SagaEventStoreRepository : JpaRepository<SagaEventStoreEntry, UUID> {
-    @Query("SELECT s FROM SagaEventStoreEntry s WHERE s.sagaId = :sagaId ORDER BY s.createAt DESC LIMIT 1")
+    @Query("SELECT s FROM SagaEventStoreEntry s WHERE s.sagaId = :sagaId ORDER BY s.createAt DESC")
     fun findLastEntryBySagaId(@Param("sagaId") sagaId: UUID): SagaEventStoreEntry?
 }
 

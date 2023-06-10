@@ -14,3 +14,16 @@ services:
     image: dbeaver/cloudbeaver:latest
     ports:
       - "9090:8978"
+  localstack:
+    container_name: "localstack"
+    image: localstack/localstack
+    environment:
+      - SERVICES=sqs,sns
+      - AWS_ACCESS_KEY_ID=x
+      - AWS_SECRET_ACCESS_KEY=x
+      - AWS_DEFAULT_REGION=us-east-1
+    volumes:
+      - "/tmp/localstack:/tmp/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    ports:
+      - "4566:4566"
