@@ -14,7 +14,7 @@ import javax.persistence.Table
 data class FlightReservation(
     @Id
 //    @GeneratedValue(strategy = GenerationType.UUID)
-    var id: UUID? = null,
+    var id: UUID = UUID.randomUUID(),
     @Column
     @Enumerated(EnumType.STRING)
     var status: Status = Status.PENDING,

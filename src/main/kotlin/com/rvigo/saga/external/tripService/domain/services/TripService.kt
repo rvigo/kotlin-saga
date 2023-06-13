@@ -3,23 +3,30 @@ package com.rvigo.saga.external.tripService.domain.services
 import com.rvigo.saga.external.tripService.application.listeners.commands.CompensateCreateTripCommand
 import com.rvigo.saga.external.tripService.application.listeners.commands.ConfirmTripCommand
 import com.rvigo.saga.external.tripService.application.listeners.commands.CreateTripCommand
+import com.rvigo.saga.external.tripService.application.listeners.commands.CreateTripResponse
+import com.rvigo.saga.external.tripService.application.listeners.commands.CreateTripResponse.Status
 import com.rvigo.saga.external.tripService.application.listeners.commands.TripCanceledResponse
-import com.rvigo.saga.external.tripService.application.listeners.commands.TripCreatedResponse
-import com.rvigo.saga.external.tripService.application.listeners.commands.TripCreatedResponse.Status
 import com.rvigo.saga.external.tripService.domain.models.Trip
 import com.rvigo.saga.external.tripService.domain.models.Trip.TripStatus
 import com.rvigo.saga.external.tripService.infra.repositories.TripRepository
+import com.rvigo.saga.infra.aws.EVENT_TYPE_HEADER
+import com.rvigo.saga.infra.aws.SNSPublisher
+import com.rvigo.saga.infra.aws.SnsEvent
+import com.rvigo.saga.infra.events.SagaEvent
 import com.rvigo.saga.logger
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
-@Transactional
+//@Transactional(propagation = Propagation.REQUIRES_NEW)
 @Service
 class TripService(
     private val repository: TripRepository,
-    private val publisher: ApplicationEventPublisher
+    private val publisher: ApplicationEventPublisher,
+    private val snsPublisher: SNSPublisher,
+    @Value("\${cloud.aws.sns.topics.saga-events}")
+    private val sagaEventsTopic: String
 ) {
     private val logger by logger()
 
@@ -32,23 +39,30 @@ class TripService(
 
         repository.save(trip)
     }.onSuccess {
-        publisher.publishEvent(
-            TripCreatedResponse(
-                sagaId = command.sagaId,
-                cpf = command.cpf,
-                responseStatus = Status.SUCCESS,
-                tripId = it.id,
-                tripStatus = it.status
+        snsPublisher.publish(
+            SnsEvent(
+                CreateTripResponse(
+                    sagaId = command.sagaId,
+                    cpf = command.cpf,
+                    responseStatus = Status.SUCCESS,
+                    tripId = it.id,
+                    tripStatus = it.status
+                ),
+                sagaEventsTopic,
+                mapOf(EVENT_TYPE_HEADER to SagaEvent.CREATE_TRIP_RESPONSE.name)
             )
         )
     }.onFailure {
         logger.error("Something went wrong: $it")
-        publisher.publishEvent(
-            TripCreatedResponse(
-                sagaId = command.sagaId,
-                cpf = command.cpf,
-                responseStatus = Status.FAILURE,
-                tripStatus = TripStatus.FAILED
+        snsPublisher.publish(
+            SnsEvent(
+                CreateTripResponse(
+                    sagaId = command.sagaId,
+                    cpf = command.cpf,
+                    responseStatus = Status.FAILURE,
+                    tripStatus = TripStatus.FAILED
+                ), sagaEventsTopic,
+                mapOf(EVENT_TYPE_HEADER to SagaEvent.CREATE_TRIP_RESPONSE.name)
             )
         )
     }

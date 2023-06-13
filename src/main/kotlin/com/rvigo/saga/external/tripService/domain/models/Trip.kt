@@ -13,7 +13,7 @@ import javax.persistence.Table
 data class Trip(
     @Id
 //    @GeneratedValue(strategy = GenerationType.UUID)
-    var id: UUID? = null,
+    var id: UUID = UUID.randomUUID(),
 
     @Column(name = "hotel_reservation_id")
     var hotelReservationId: UUID? = null,

@@ -122,8 +122,9 @@ for the sake of simplicity.
 
 ## TODO
 
-- [ ] Introduce a Flight Reservation microservice to the implemented Saga
+- [x] Introduce a Flight Reservation microservice to the implemented Saga
 - [ ] Implement Unit and Integration Tests scenarios
+- [ ] Replace the `@EventListener` (includes `SQS`/`SNS` listeners)
 
 ###
 

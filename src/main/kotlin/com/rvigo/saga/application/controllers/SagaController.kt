@@ -1,11 +1,9 @@
 package com.rvigo.saga.application.controllers
 
 import com.rvigo.saga.application.controllers.dtos.SagaDTO
-import com.rvigo.saga.infra.aws.SNSEvent
-import com.rvigo.saga.infra.aws.SNSEvent.*
-import com.rvigo.saga.infra.aws.SNSPublisher
-import com.rvigo.saga.logger
-import org.springframework.beans.factory.annotation.Value
+import com.rvigo.saga.domain.CreateSagaCommand
+import com.rvigo.saga.domain.SagaManager
+import com.rvigo.saga.infra.aws.SnsEvent.*
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -15,25 +13,11 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/saga/trip")
-class SagaController(
-    val publisher: SNSPublisher,
-    @Value("\${cloud.aws.sns.topics.start-saga}")
-    val topic: String
-) {
-    private val logger by logger()
-
+class SagaController(val manager: SagaManager) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createTrip(@RequestBody sagaDTO: SagaDTO): SagaDTO {
-        logger.info("topic: $topic")
-
-        val event = SNSEvent(Body("test"), topic, mapOf("sender" to "controller"))
-        
-        publisher.publish(event)
-        logger.info("message sent")
-
+        manager.createSaga(CreateSagaCommand(sagaDTO.cpf))
         return sagaDTO
     }
 }
-
-

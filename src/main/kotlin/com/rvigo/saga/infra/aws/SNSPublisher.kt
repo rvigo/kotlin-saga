@@ -6,12 +6,13 @@ import org.springframework.cloud.aws.messaging.core.NotificationMessagingTemplat
 import org.springframework.stereotype.Component
 
 @Component
-class SNSPublisher(private val notificationMessagingTemplate: NotificationMessagingTemplate) {
-
-    private val mapper = ObjectMapper()
+class SNSPublisher(
+    private val notificationMessagingTemplate: NotificationMessagingTemplate,
+    private val mapper: ObjectMapper
+) {
 
     private val logger by logger()
-    fun publish(event: SNSEvent) {
+    fun publish(event: SnsEvent) {
         val body = mapper.writeValueAsString(event.body)
         logger.debug("message $body sent")
         notificationMessagingTemplate.convertAndSend(event.topic, body, event.attributes)

@@ -10,14 +10,10 @@ import org.springframework.stereotype.Component
 
 
 @Component
-class SagaListener(private val sagaManager: SagaManager) : DefaultListener() {
+class SagaUpdateEventsListener(private val sagaManager: SagaManager) : DefaultListener() {
 
     private val logger by logger()
 
-    @SqsListener("\${cloud.aws.sqs.queues.create-saga}", deletionPolicy = ON_SUCCESS)
-    fun listenCreateSaga(@Payload message: String) = sagaManager.createSaga(convertMessage(message))
-
-    @SqsListener("\${cloud.aws.sqs.queues.create-trip-response}", deletionPolicy = ON_SUCCESS)
-    fun listenCreateTripResponse(@Payload message: String) =
-        sagaManager.handleCreateTripResponse(convertMessage(message))
+    @SqsListener("\${cloud.aws.sqs.queues.update-events}", deletionPolicy = ON_SUCCESS)
+    fun listenCreateSaga(@Payload message: String) = sagaManager.updateSaga(convertMessage(message))
 }

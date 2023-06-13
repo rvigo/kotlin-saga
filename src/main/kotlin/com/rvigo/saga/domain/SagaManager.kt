@@ -7,107 +7,97 @@ import com.rvigo.saga.external.flightService.application.listeners.commands.Crea
 import com.rvigo.saga.external.flightService.application.listeners.commands.CreateFlightReservationResponse
 import com.rvigo.saga.external.hotelService.application.listeners.commands.CreateHotelReservationResponse
 import com.rvigo.saga.external.hotelService.application.listeners.commands.CreateReservationCommand
-import com.rvigo.saga.external.tripService.application.listeners.commands.TripCreatedResponse
-import com.rvigo.saga.external.tripService.application.listeners.commands.ifFailure
-import com.rvigo.saga.external.tripService.application.listeners.commands.ifSuccess
+import com.rvigo.saga.external.tripService.application.listeners.commands.CreateTripCommand
+import com.rvigo.saga.external.tripService.application.listeners.commands.CreateTripResponse
 import com.rvigo.saga.infra.LoggerUtils.putSagaIdIntoMdc
+import com.rvigo.saga.infra.aws.EVENT_TYPE_HEADER
+import com.rvigo.saga.infra.aws.SNSPublisher
+import com.rvigo.saga.infra.aws.SnsEvent
 import com.rvigo.saga.infra.eventStore.SagaEventStoreEntry
 import com.rvigo.saga.infra.eventStore.SagaEventStoreManager
-import com.rvigo.saga.infra.events.ifFailure
-import com.rvigo.saga.infra.events.ifSuccess
-import com.rvigo.saga.infra.repositories.ParticipantRepository
+import com.rvigo.saga.infra.events.onFailure
+import com.rvigo.saga.infra.events.onSuccess
 import com.rvigo.saga.infra.repositories.SagaRepository
 import com.rvigo.saga.logger
-import org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS
-import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener
-import org.springframework.context.ApplicationEventPublisher
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.repository.findByIdOrNull
-import org.springframework.messaging.handler.annotation.Headers
-import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
-@Transactional
 @Component
 class SagaManager(
     private val sagaRepository: SagaRepository,
     private val sagaEventStoreManager: SagaEventStoreManager,
-    private val participantRepository: ParticipantRepository,
     private val hotelProxy: HotelProxy,
     private val tripProxy: TripProxy,
     private val flightProxy: FlightProxy,
-    private val applicationEventPublisher: ApplicationEventPublisher
+    private val snsPublisher: SNSPublisher,
+    @Value("\${cloud.aws.sns.topics.saga-events}")
+    private val targetTopic: String
 ) {
     private val logger by logger()
 
-    @SqsListener("\${cloud.aws.sqs.queues.start-saga}", deletionPolicy = ON_SUCCESS)
-    fun start(@Payload message: String, @Headers headers: Map<String, Any>) {
-        logger.info("got headers: $headers")
-        logger.info("got message: $message")
-//        val participants = buildParticipants().let { participantRepository.saveAll(it) }
-//        withNewSaga(participants) {
-//            sagaEventStoreManager.updateEntry(SagaEventStoreEntry(sagaId = id, sagaStatus = status))
-
-        // first saga step
-//            tripProxy.create(CreateTripCommand(sagaId = id, cpf = command.cpf)).also {
-//                this.updateParticipant(
-//                    participantName = Participant.ParticipantName.TRIP,
-//                    status = Participant.Status.PROCESSING
-//                ).save()
-//            }
-//        }
+    fun createSaga(command: CreateSagaCommand) {
+        val participants = buildParticipants()
+        withNewSaga(participants) {
+            sagaEventStoreManager.updateEntry(SagaEventStoreEntry(sagaId = id, sagaStatus = status))
+            // trigger first saga step
+            tripProxy.create(CreateTripCommand(id, command.cpf))
+        }
     }
 
-    //    @EventListener
-    fun on(response: TripCreatedResponse) {
+    fun handleCreateTripResponse(response: CreateTripResponse) {
         withSaga(response.sagaId) {
-            response.ifSuccess {
-                this.updateParticipant(
-                    Participant.ParticipantName.TRIP,
-                    response.tripId,
-                    Participant.Status.COMPLETED
-                ).save().also { saga ->
-                    val entry = SagaEventStoreEntry(
-                        sagaId = saga.id,
-                        sagaStatus = saga.status,
-                        tripId = response.tripId,
-                        tripStatus = response.tripStatus
+            response.onSuccess {
+                logger.info("Trip created")
+                hotelProxy.create(CreateReservationCommand(response.sagaId, response.cpf))
+                flightProxy.create(CreateFlightReservationCommand(response.sagaId, response.cpf))
+                sagaEventStoreManager.updateEntry(
+                    SagaEventStoreEntry(
+                        sagaId = id,
+                        sagaStatus = status,
+                        tripStatus = response.tripStatus,
+                        tripId = response.tripId
                     )
-                    sagaEventStoreManager.updateEntry(entry).also {
-                        logger.info("Saga updated!")
-                        hotelProxy.create(CreateReservationCommand(response.sagaId, response.cpf))
-                        flightProxy.create(CreateFlightReservationCommand(response.sagaId, response.cpf))
-                    }
-                }
-                applicationEventPublisher.publishEvent(SagaUpdatedEvent(this.id, Participant.ParticipantName.TRIP))
-            }.ifFailure {
+                )
+                snsPublisher.publish(
+                    SnsEvent(
+                        SagaUpdatedEvent(
+                            id,
+                            Participant.ParticipantName.TRIP,
+                            Participant.Status.COMPLETED
+                        ),
+                        targetTopic,
+                        mapOf(EVENT_TYPE_HEADER to "UPDATE_EVENT")
+                    )
+                )
+            }.onFailure {
                 // since this is the first step, there is nothing to compensate
-                this.updateParticipant(
+                val updateSaga = this.updateParticipant(
                     Participant.ParticipantName.TRIP,
                     response.tripId,
                     Participant.Status.COMPENSATING
-                ).markAsCompensated().save().also {
-                    sagaEventStoreManager.updateEntry(
-                        SagaEventStoreEntry(
-                            sagaId = it.id,
-                            sagaStatus = it.status
-                        )
+                ).markAsCompensated().save()
+                sagaEventStoreManager.updateEntry(
+                    SagaEventStoreEntry(
+                        sagaId = updateSaga.id,
+                        sagaStatus = updateSaga.status
                     )
-                }
+                )
             }
         }
     }
 
-    //    @EventListener
-    fun on(response: CreateHotelReservationResponse) {
+    fun onCreateHotelReservationCommand(response: CreateHotelReservationResponse) {
         withSaga(response.sagaId) {
-            response.ifSuccess {
+            response.onSuccess {
                 this.updateParticipant(
                     Participant.ParticipantName.HOTEL,
                     response.reservationId,
                     Participant.Status.COMPLETED
-                ).save().also {
+                ).also {
                     sagaEventStoreManager.updateEntry(
                         SagaEventStoreEntry(
                             sagaId = it.id,
@@ -117,13 +107,13 @@ class SagaManager(
                         )
                     )
                 }
-                applicationEventPublisher.publishEvent(SagaUpdatedEvent(this.id, Participant.ParticipantName.HOTEL))
-            }.ifFailure {
+//                applicationEventPublisher.publishEvent(SagaUpdatedEvent(this.id, Participant.ParticipantName.HOTEL))
+            }.onFailure {
                 this.updateParticipant(
                     Participant.ParticipantName.HOTEL,
                     response.reservationId,
                     Participant.Status.COMPENSATING
-                ).markAsCompensating().save().also {
+                ).markAsCompensating().also {
                     sagaEventStoreManager.updateEntry(
                         SagaEventStoreEntry(
                             sagaId = it.id,
@@ -141,12 +131,12 @@ class SagaManager(
     //    @EventListener
     fun on(response: CreateFlightReservationResponse) {
         withSaga(response.sagaId) {
-            response.ifSuccess {
+            response.onSuccess {
                 this.updateParticipant(
                     Participant.ParticipantName.FLIGHT,
                     response.reservationId,
                     Participant.Status.COMPLETED
-                ).save().also {
+                ).also {
                     sagaEventStoreManager.updateEntry(
                         SagaEventStoreEntry(
                             sagaId = it.id,
@@ -156,13 +146,13 @@ class SagaManager(
                         )
                     )
                 }
-                applicationEventPublisher.publishEvent(SagaUpdatedEvent(this.id, Participant.ParticipantName.FLIGHT))
-            }.ifFailure {
+//                applicationEventPublisher.publishEvent(SagaUpdatedEvent(this.id, Participant.ParticipantName.FLIGHT))
+            }.onFailure {
                 this.updateParticipant(
                     Participant.ParticipantName.FLIGHT,
                     response.reservationId,
                     Participant.Status.COMPENSATING
-                ).markAsCompensating().save().also {
+                ).markAsCompensating().also {
                     sagaEventStoreManager.updateEntry(
                         SagaEventStoreEntry(
                             sagaId = it.id,
@@ -218,18 +208,36 @@ class SagaManager(
 //        )
 //    }
 
+    @Transactional(propagation = Propagation.REQUIRED)
     private fun getSaga(id: UUID) = sagaRepository.findByIdOrNull(id)
         ?: throw RuntimeException("Cannot find saga with id: $id")
 
+    @Transactional(propagation = Propagation.REQUIRED)
     private fun Saga.save() = sagaRepository.save(this)
 
-    private fun <T> withNewSaga(participants: List<Participant>, block: Saga.() -> T): T {
-        val saga = Saga(participants = participants.toMutableList()).save().also { putSagaIdIntoMdc(it.id) }
-        logger.info("A new saga has started")
-        return block(saga)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    private inline fun withNewSaga(participants: List<Participant>, block: Saga.() -> Unit): Saga {
+        val saga = Saga(participants = participants.toMutableList())
+            .save()
+            .also { putSagaIdIntoMdc(it.id) }
+            .also { logger.info("A new saga has started!") }
+        block(saga)
+        return saga
     }
 
-    private fun <T> withSaga(sagaId: UUID, block: Saga.() -> T) = block(getSaga(sagaId))
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    private inline fun <reified T> withSaga(sagaId: UUID, block: Saga.() -> T): T =
+        block(getSaga(sagaId).also { putSagaIdIntoMdc(it.id) })
+
+    @Transactional(propagation = Propagation.REQUIRED)
+    fun updateSaga(sagaEvent: SagaUpdatedEvent) {
+        withSaga(sagaEvent.sagaId) {
+            this.updateParticipant(
+                participantName = sagaEvent.from,
+                status = sagaEvent.status
+            ).save()
+        }
+    }
 
     // TODO should it go to its own place?
     private fun buildParticipants(): List<Participant> {

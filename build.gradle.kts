@@ -33,10 +33,10 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
 
     // aws
-    implementation("org.springframework.cloud:spring-cloud-starter-aws-messaging:2.2.6.RELEASE")
+    implementation("org.springframework.cloud:spring-cloud-aws-messaging:2.2.6.RELEASE")
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
-    
+
     // test
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
