@@ -19,11 +19,11 @@ services:
     image: localstack/localstack
     environment:
       - SERVICES=sqs,sns
-      - AWS_ACCESS_KEY_ID=x
-      - AWS_SECRET_ACCESS_KEY=x
+      - AWS_ACCESS_KEY_ID=localstack
+      - AWS_SECRET_ACCESS_KEY=localstack
       - AWS_DEFAULT_REGION=us-east-1
     volumes:
-      - "/tmp/localstack:/tmp/localstack"
+      - "./build/localstack:/tmp/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
     ports:
       - "4566:4566"
