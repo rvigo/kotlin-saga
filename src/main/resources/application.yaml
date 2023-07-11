@@ -23,5 +23,9 @@ cloud:
       create-trip-command: "saga-create-trip-command-queue"
       create-trip-response: "saga-create-trip-response-queue"
       update-events: "saga-update-events-queue"
+      create-hotel-reservation-command: "saga-create-hotel-reservation-command-queue"
+      create-hotel-reservation-response: "saga-create-hotel-reservation-response-queue"
+      create-flight-reservation-command: "saga-create-flight-reservation-command-queue"
+      create-flight-reservation-response: "saga-create-flight-reservation-response-queue"
     sns.topics:
       saga-events: "saga-saga-events-topic"

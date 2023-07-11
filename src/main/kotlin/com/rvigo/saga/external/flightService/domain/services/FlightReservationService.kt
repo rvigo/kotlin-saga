@@ -6,9 +6,14 @@ import com.rvigo.saga.external.flightService.application.listeners.commands.Crea
 import com.rvigo.saga.external.flightService.application.listeners.commands.CreateFlightReservationResponse
 import com.rvigo.saga.external.flightService.domain.models.FlightReservation
 import com.rvigo.saga.external.flightService.infra.repositories.FlightRepository
+import com.rvigo.saga.infra.aws.EVENT_TYPE_HEADER
+import com.rvigo.saga.infra.aws.SNSPublisher
+import com.rvigo.saga.infra.aws.SnsEvent
 import com.rvigo.saga.infra.events.BaseEvent
 import com.rvigo.saga.infra.events.BaseResponse
-import com.rvigo.saga.logger
+import com.rvigo.saga.infra.events.SagaEvent
+import com.rvigo.saga.infra.logger.logger
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -18,7 +23,11 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class FlightReservationService(
     private val repository: FlightRepository,
-    private val publisher: ApplicationEventPublisher
+    private val publisher: ApplicationEventPublisher,
+    private val snsPublisher: SNSPublisher,
+    @Value("\${cloud.aws.sns.topics.saga-events}")
+    private val sagaEventsTopic: String
+
 ) {
     private val logger by logger()
 
@@ -31,12 +40,14 @@ class FlightReservationService(
             // throw RuntimeException("Cannot create the reservation for cpf: ${command.cpf}")
             repository.save(flightReservation)
         }.onSuccess {
-            notify(
-                CreateFlightReservationResponse(
-                    sagaId = command.sagaId,
-                    status = BaseResponse.Status.SUCCESS,
-                    reservationStatus = it.status,
-                    reservationId = it.id
+            snsPublisher.publish(
+                SnsEvent(
+                    CreateFlightReservationResponse(
+                        reservationId = it.id,
+                        reservationStatus = it.status,
+                        status = BaseResponse.Status.SUCCESS,
+                        sagaId = command.sagaId
+                    ), sagaEventsTopic, mapOf(EVENT_TYPE_HEADER to SagaEvent.CREATE_FLIGHT_RESERVATION.name)
                 )
             )
         }.onFailure {

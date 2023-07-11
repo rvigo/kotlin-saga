@@ -4,14 +4,12 @@ import com.rvigo.saga.external.tripService.application.listeners.commands.Compen
 import com.rvigo.saga.external.tripService.application.listeners.commands.ConfirmTripCommand
 import com.rvigo.saga.external.tripService.domain.services.TripService
 import com.rvigo.saga.infra.listeners.DefaultListener
-import com.rvigo.saga.logger
+import com.rvigo.saga.infra.logger.logger
 import org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener
 import org.springframework.context.event.EventListener
 import org.springframework.messaging.handler.annotation.Payload
 import org.springframework.stereotype.Component
-import org.springframework.transaction.annotation.Propagation
-import org.springframework.transaction.annotation.Transactional
 
 
 @Component
@@ -21,7 +19,6 @@ class TripCommandListener(private val service: TripService) : DefaultListener() 
     @SqsListener("\${cloud.aws.sqs.queues.create-trip-command}", deletionPolicy = ON_SUCCESS)
     fun on(@Payload message: String) {
         logger.info("Got a command: $message")
-
         service.create(convertMessage(message))
     }
 

@@ -2,7 +2,7 @@ package com.rvigo.saga.application.listeners
 
 import com.rvigo.saga.domain.SagaManager
 import com.rvigo.saga.infra.listeners.DefaultListener
-import com.rvigo.saga.logger
+import com.rvigo.saga.infra.logger.logger
 import org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener
 import org.springframework.messaging.handler.annotation.Payload

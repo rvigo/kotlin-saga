@@ -13,13 +13,14 @@ import com.rvigo.saga.infra.aws.EVENT_TYPE_HEADER
 import com.rvigo.saga.infra.aws.SNSPublisher
 import com.rvigo.saga.infra.aws.SnsEvent
 import com.rvigo.saga.infra.events.SagaEvent
-import com.rvigo.saga.logger
+import com.rvigo.saga.infra.logger.logger
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
-//@Transactional(propagation = Propagation.REQUIRES_NEW)
+@Transactional
 @Service
 class TripService(
     private val repository: TripRepository,
