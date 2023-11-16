@@ -3,7 +3,7 @@ package com.rvigo.saga.external.hotelService.application.listeners
 import com.rvigo.saga.external.hotelService.application.listeners.commands.CompensateCreateReservationCommand
 import com.rvigo.saga.external.hotelService.application.listeners.commands.ConfirmReservationCommand
 import com.rvigo.saga.external.hotelService.domain.services.HotelService
-import com.rvigo.saga.infra.listeners.DefaultListener
+import com.rvigo.saga.infra.listener.DefaultListener
 import com.rvigo.saga.infra.logger.logger
 import org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy.ON_SUCCESS
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener

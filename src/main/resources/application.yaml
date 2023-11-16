@@ -3,11 +3,15 @@ spring:
     url: jdbc:postgresql://localhost:5432/saga
     username: postgres
     password: postgres
+
   jpa:
-    show-sql: false
+    hibernate.ddl-auto: create
+    generate-ddl: true
+    show-sql: true
     properties:
       hibernate:
         format_sql: true
+
 cloud:
   aws:
     stack.auto: false

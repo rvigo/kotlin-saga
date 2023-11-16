@@ -1,11 +1,11 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("org.springframework.boot") version "2.7.12"
-    id("io.spring.dependency-management") version "1.1.0"
-    kotlin("jvm") version "1.7.22"
-    kotlin("plugin.spring") version "1.7.22"
-    kotlin("plugin.jpa") version "1.7.22"
+    id("org.springframework.boot") version "3.1.3"
+    id("io.spring.dependency-management") version "1.1.3"
+    kotlin("jvm") version "1.9.10"
+    kotlin("plugin.spring") version "1.9.10"
+    kotlin("plugin.jpa") version "1.9.10"
 }
 
 group = "com.rvigo"
@@ -28,7 +28,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.flywaydb:flyway-core:9.18.0")
+//    implementation("org.flywaydb:flyway-core:9.18.0")
     // postgres
     runtimeOnly("org.postgresql:postgresql")
 
@@ -36,6 +36,8 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-aws-messaging:2.2.6.RELEASE")
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
+// https://mvnrepository.com/artifact/io.mockk/mockk
+    testImplementation("io.mockk:mockk:1.13.8")
 
     // test
     testImplementation("org.springframework.boot:spring-boot-starter-test")

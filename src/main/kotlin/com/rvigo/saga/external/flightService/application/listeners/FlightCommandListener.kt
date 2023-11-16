@@ -3,7 +3,7 @@ package com.rvigo.saga.external.flightService.application.listeners
 import com.rvigo.saga.external.flightService.application.listeners.commands.CompensateCreateFlightReservationCommand
 import com.rvigo.saga.external.flightService.application.listeners.commands.ConfirmFlightReservationCommand
 import com.rvigo.saga.external.flightService.domain.services.FlightReservationService
-import com.rvigo.saga.infra.listeners.DefaultListener
+import com.rvigo.saga.infra.listener.DefaultListener
 import com.rvigo.saga.infra.logger.logger
 import org.springframework.cloud.aws.messaging.listener.SqsMessageDeletionPolicy
 import org.springframework.cloud.aws.messaging.listener.annotation.SqsListener

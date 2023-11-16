@@ -1,19 +1,18 @@
 package com.rvigo.saga.external.tripService.application.listeners.commands
 
-import com.rvigo.saga.external.tripService.domain.models.Trip
-import com.rvigo.saga.infra.aws.SnsEvent
-import com.rvigo.saga.infra.events.BaseResponse
+import com.rvigo.saga.domain.command.AbstractCommandResponse
+import com.rvigo.saga.domain.command.CommandMessage.Companion.EVENT_TYPE_HEADER
+import com.rvigo.saga.domain.command.CommandResponse
+import com.rvigo.saga.domain.event.SagaEventType
 import java.util.UUID
-
 
 data class CreateTripResponse(
     val sagaId: UUID,
     val cpf: String,
-    val responseStatus: Status,
-    val tripId: UUID? = null,
-    val tripStatus: Trip.TripStatus? = null
-) : SnsEvent.SnsEventBody, BaseResponse {
-    override fun isSuccess() = this.responseStatus == Status.SUCCESS
-    enum class Status { SUCCESS, FAILURE }
-}
-
+    val responseStatus: CommandResponse.Status,
+    override val body: TripResponseBody,
+) : AbstractCommandResponse(
+    sagaId,
+    status = responseStatus,
+    attributes = mapOf(EVENT_TYPE_HEADER to SagaEventType.CREATE_TRIP_RESPONSE)
+)

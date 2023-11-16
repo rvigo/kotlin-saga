@@ -1,24 +1,28 @@
 package com.rvigo.saga.infra.eventStore
 
-import com.rvigo.saga.domain.Saga
+import com.rvigo.saga.domain.valueObject.SagaState
 import com.rvigo.saga.external.flightService.domain.models.FlightReservation
 import com.rvigo.saga.external.hotelService.domain.models.HotelReservation
-import com.rvigo.saga.external.tripService.domain.models.Trip
+import com.rvigo.saga.external.tripService.domain.model.TripEntity
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.Table
 import org.hibernate.annotations.CreationTimestamp
 import java.time.LocalDateTime
 import java.util.UUID
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.EnumType
-import javax.persistence.Enumerated
-import javax.persistence.Id
-import javax.persistence.Table
 
+
+// TODO ???????????
 @Entity
 @Table(name = "saga_event_store")
 data class SagaEventStoreEntry(
     @Id
-//    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "event_id")
     val id: UUID = UUID.randomUUID(),
 
@@ -27,14 +31,14 @@ data class SagaEventStoreEntry(
 
     @Column(name = "saga_status")
     @Enumerated(EnumType.STRING)
-    val sagaStatus: Saga.Status,
+    val sagaState: SagaState,
 
     @Column(name = "trip_id")
     val tripId: UUID? = null,
 
     @Column(name = "trip_status")
     @Enumerated(EnumType.STRING)
-    val tripStatus: Trip.TripStatus? = null,
+    val tripStatus: TripEntity.TripStatus? = null,
 
     @Column(name = "hotel_reservation_id")
     val hotelReservationId: UUID? = null,

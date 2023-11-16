@@ -1,18 +1,18 @@
 package com.rvigo.saga.external.flightService.domain.services
 
+import com.rvigo.saga.domain.command.CommandMessage.Companion.EVENT_TYPE_HEADER
+import com.rvigo.saga.domain.command.CommandResponse
+import com.rvigo.saga.domain.event.SagaEventType
+import com.rvigo.saga.domain.messaging.Message
 import com.rvigo.saga.external.flightService.application.listeners.commands.CompensateCreateFlightReservationCommand
 import com.rvigo.saga.external.flightService.application.listeners.commands.ConfirmFlightReservationCommand
 import com.rvigo.saga.external.flightService.application.listeners.commands.CreateFlightReservationCommand
 import com.rvigo.saga.external.flightService.application.listeners.commands.CreateFlightReservationResponse
+import com.rvigo.saga.external.flightService.application.listeners.commands.FlightReservationResponseBody
 import com.rvigo.saga.external.flightService.domain.models.FlightReservation
 import com.rvigo.saga.external.flightService.infra.repositories.FlightRepository
-import com.rvigo.saga.infra.aws.EVENT_TYPE_HEADER
-import com.rvigo.saga.infra.aws.SNSPublisher
-import com.rvigo.saga.infra.aws.SnsEvent
-import com.rvigo.saga.infra.events.BaseEvent
-import com.rvigo.saga.infra.events.BaseResponse
-import com.rvigo.saga.infra.events.SagaEvent
 import com.rvigo.saga.infra.logger.logger
+import com.rvigo.saga.infra.publisher.SNSPublisher
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
@@ -41,21 +41,23 @@ class FlightReservationService(
             repository.save(flightReservation)
         }.onSuccess {
             snsPublisher.publish(
-                SnsEvent(
-                    CreateFlightReservationResponse(
+                CreateFlightReservationResponse(
+                    sagaId = command.sagaId,
+                    responseStatus = CommandResponse.Status.SUCCESS,
+                    body = FlightReservationResponseBody(
                         reservationId = it.id,
                         reservationStatus = it.status,
-                        status = BaseResponse.Status.SUCCESS,
-                        sagaId = command.sagaId
-                    ), sagaEventsTopic, mapOf(EVENT_TYPE_HEADER to SagaEvent.CREATE_FLIGHT_RESERVATION.name)
-                )
+                    ),
+                    attributes = mapOf(EVENT_TYPE_HEADER to SagaEventType.CREATE_FLIGHT_RESERVATION.name)),
+                sagaEventsTopic,
             )
         }.onFailure {
             logger.error("${command.sagaId} - Something went wrong: $it")
             notify(
                 CreateFlightReservationResponse(
-                    sagaId = command.sagaId, status = BaseResponse.Status.FAILURE,
-                    reservationStatus = FlightReservation.Status.FAILED
+                    sagaId = command.sagaId,
+                    responseStatus = CommandResponse.Status.FAILURE,
+                    body = FlightReservationResponseBody(reservationStatus = FlightReservation.Status.FAILED),
                 )
             )
         }
@@ -83,9 +85,9 @@ class FlightReservationService(
         }
     }
 
-    fun notify(event: BaseEvent) {
-        logger.info("Publishing event: $event")
-        publisher.publishEvent(event)
+    fun notify(message: Message) {
+        logger.info("Publishing event: $message")
+        publisher.publishEvent(message)
     }
 }
 

@@ -1,19 +1,17 @@
 package com.rvigo.saga.external.hotelService.domain.services
 
+import com.rvigo.saga.domain.command.CommandResponse
+import com.rvigo.saga.domain.event.DomainEvent
 import com.rvigo.saga.external.hotelService.application.listeners.commands.ConfirmReservationCommand
+import com.rvigo.saga.external.hotelService.application.listeners.commands.CreateHotelReservationBody
 import com.rvigo.saga.external.hotelService.application.listeners.commands.CreateHotelReservationCommand
 import com.rvigo.saga.external.hotelService.application.listeners.commands.CreateHotelReservationResponse
 import com.rvigo.saga.external.hotelService.domain.models.HotelReservation
 import com.rvigo.saga.external.hotelService.domain.models.HotelReservation.Status.CONFIRMED
 import com.rvigo.saga.external.hotelService.domain.models.HotelReservation.Status.FAILED
 import com.rvigo.saga.external.hotelService.infra.repositories.HotelRepository
-import com.rvigo.saga.infra.aws.EVENT_TYPE_HEADER
-import com.rvigo.saga.infra.aws.SNSPublisher
-import com.rvigo.saga.infra.aws.SnsEvent
-import com.rvigo.saga.infra.events.BaseEvent
-import com.rvigo.saga.infra.events.BaseResponse
-import com.rvigo.saga.infra.events.SagaEvent
 import com.rvigo.saga.infra.logger.logger
+import com.rvigo.saga.infra.publisher.SNSPublisher
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.repository.findByIdOrNull
@@ -42,22 +40,24 @@ class HotelService(
             repository.save(hotelReservation)
         }.onSuccess {
             snsPublisher.publish(
-                SnsEvent(
-                    CreateHotelReservationResponse(
+                CreateHotelReservationResponse(
+                    body = CreateHotelReservationBody(
                         reservationId = it.id,
                         reservationStatus = it.status,
-                        status = BaseResponse.Status.SUCCESS,
-                        sagaId = command.sagaId
                     ),
-                    sagaEventsTopic,
-                    mapOf(EVENT_TYPE_HEADER to SagaEvent.CREATE_HOTEL_RESERVATION_RESPONSE.name)
-                )
+                    sagaId = command.sagaId, responseStatus = CommandResponse.Status.SUCCESS
+                ),
+                sagaEventsTopic,
             )
+
         }.onFailure {
             notify(
                 CreateHotelReservationResponse(
-                    sagaId = command.sagaId, status = BaseResponse.Status.FAILURE,
-                    reservationStatus = FAILED
+                    sagaId = command.sagaId,
+                    responseStatus = CommandResponse.Status.SUCCESS,
+                    body = CreateHotelReservationBody(
+                        reservationStatus = FAILED
+                    )
                 )
             )
         }
@@ -74,7 +74,7 @@ class HotelService(
         }
     }
 
-    fun notify(event: BaseEvent) {
+    fun notify(event: DomainEvent) {
         logger.info("publishing event: $event")
         publisher.publishEvent(event)
     }
