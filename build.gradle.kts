@@ -23,29 +23,28 @@ dependencyManagement {
 }
 
 dependencies {
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
+
     // spring
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-//    implementation("org.flywaydb:flyway-core:9.18.0")
+
     // postgres
     runtimeOnly("org.postgresql:postgresql")
 
     // aws
-    implementation("org.springframework.cloud:spring-cloud-aws-messaging:2.2.6.RELEASE")
-
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
-// https://mvnrepository.com/artifact/io.mockk/mockk
-    testImplementation("io.mockk:mockk:1.13.8")
+    implementation("io.awspring.cloud:spring-cloud-aws-messaging:2.4.4")
 
     // test
+    testImplementation("io.mockk:mockk:1.13.8")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
 
 tasks.withType<KotlinCompile> {
     kotlinOptions {
-        freeCompilerArgs = listOf("-Xjsr305=strict")
+        freeCompilerArgs = listOf("-Xjsr305=strict", "-Xjvm-default=all")
         jvmTarget = "17"
     }
 }
