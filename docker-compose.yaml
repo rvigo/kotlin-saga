@@ -8,22 +8,16 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: saga
+      POSTGRES_DB: cart
+    networks:
+      - cart_nw
   dbeaver:
     container_name: "dbeaver"
     image: dbeaver/cloudbeaver:latest
     ports:
       - "9090:8978"
-  localstack:
-    container_name: "localstack"
-    image: localstack/localstack
-    environment:
-      - SERVICES=sqs,sns
-      - AWS_ACCESS_KEY_ID=localstack
-      - AWS_SECRET_ACCESS_KEY=localstack
-      - AWS_DEFAULT_REGION=us-east-1
-    volumes:
-      #      - "./build/localstack:/tmp/localstack"
-      - "/var/run/docker.sock:/var/run/docker.sock"
-    ports:
-      - "4566:4566"
+    networks:
+      - cart_nw
+networks:
+  cart_nw:
+    name: cart_nw
