@@ -1,6 +1,7 @@
 package com.rvigo.saga.cart.domain.service
 
 import com.rvigo.saga.cart.domain.event.CartCreatedEvent
+import com.rvigo.saga.cart.domain.event.CartEmptyEvent
 import com.rvigo.saga.cart.domain.event.ItemAddedEvent
 import com.rvigo.saga.cart.domain.model.Cart
 import com.rvigo.saga.cart.domain.model.CartItem
@@ -79,6 +80,22 @@ class CartService(
                     productId,
                     quantity
                 )
+            )
+        }
+    }
+
+    fun emptyCart(cartId: UUID) {
+        val cart = repository.findByIdOrNull(cartId)
+            ?: throw RuntimeException("cart not found with Id: $cartId")
+
+        val updatedCart = cart.empty()
+
+        withinTransaction {
+            repository.save(updatedCart)
+        }.also {
+            logger.info("updated cart with id ${it.id}")
+            eventDispatcher.emit(
+                CartEmptyEvent(cartId)
             )
         }
     }

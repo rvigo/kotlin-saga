@@ -71,6 +71,11 @@ data class Cart(
         return Cart(id, updatedItems)
     }
 
+    fun empty(): Cart {
+        cartItems = emptyList()
+        return this
+    }
+
     fun cartItemDetails() = cartItems.map(::CartItemDetail)
 
     constructor(id: UUID, cartItems: List<CartItem>) : this(id) {
