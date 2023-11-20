@@ -10,4 +10,9 @@ In case of an `AddItemCommand`:
 - in case of success, should de `Product` microservice emits a `ProductConsumed` event that triggers
   an `ContinueItemInclusion` command?
 
-in this scenario, I _believe_ it's a Choreography base Saga, but how can I make it explicit?
+in this scenario, I _believe_ it's a Choreography based Saga, but how can I make it explicit?
+
+## TODO
+
+- [ ] create ArchUnit tests
+- [ ] includes GitHub actions

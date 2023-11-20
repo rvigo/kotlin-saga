@@ -49,9 +49,7 @@ data class Cart(
 
     fun addItem(newCartItem: CartItem): Cart {
         val updatedItems = cartItems.toMutableList()
-        updatedItems.find {
-            it.product.id == newCartItem.product.id
-        }?.increaseQuantity(newCartItem.quantity)
+        updatedItems.findCartItemById(newCartItem)?.increaseQuantity(newCartItem.quantity)
             ?: run {
                 updatedItems.add(newCartItem)
             }
@@ -60,15 +58,9 @@ data class Cart(
     }
 
     fun removeItem(cartItem: CartItem): Cart {
-        val updatedItems = cartItems.toMutableList()
-        updatedItems.find {
-            it.product.id == cartItem.product.id
-        }?.decreaseQuantity(cartItem.quantity)
-            ?: run {
-                updatedItems.add(cartItem)
-            }
+        cartItems.findCartItemById(cartItem)?.decreaseQuantity(cartItem.quantity)
 
-        return Cart(id, updatedItems)
+        return Cart(id, cartItems)
     }
 
     fun empty(): Cart {
@@ -81,5 +73,7 @@ data class Cart(
     constructor(id: UUID, cartItems: List<CartItem>) : this(id) {
         this.cartItems = cartItems
     }
+
+    private fun List<CartItem>.findCartItemById(cartItem: CartItem) = this.find { it.product.id == cartItem.product.id }
 }
 
