@@ -3,6 +3,7 @@ package com.rvigo.saga.cart.domain.service
 import com.rvigo.saga.cart.domain.event.CartCreatedEvent
 import com.rvigo.saga.cart.domain.event.CartEmptyEvent
 import com.rvigo.saga.cart.domain.event.ItemAddedEvent
+import com.rvigo.saga.cart.domain.event.ItemRemovedEvent
 import com.rvigo.saga.cart.domain.model.Cart
 import com.rvigo.saga.cart.domain.model.CartItem
 import com.rvigo.saga.cart.domain.model.CartItemDetail
@@ -75,7 +76,7 @@ class CartService(
         }.also {
             logger.info("updated cart with id ${it.id}")
             eventDispatcher.emit(
-                ItemAddedEvent(
+                ItemRemovedEvent(
                     cartId,
                     productId,
                     quantity

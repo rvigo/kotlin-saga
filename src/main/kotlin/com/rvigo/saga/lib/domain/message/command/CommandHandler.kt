@@ -1,6 +1,10 @@
 package com.rvigo.saga.lib.domain.message.command
 
-abstract class CommandHandler {
+import kotlin.reflect.KClass
 
-    abstract fun handle(command: Command)
+interface CommandHandler<T : Command> {
+
+    fun type(): KClass<T>
+
+    fun handle(command: T)
 }

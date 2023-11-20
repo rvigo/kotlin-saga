@@ -1,6 +1,7 @@
 package com.rvigo.saga.cart.domain.service
 
 import com.rvigo.saga.cart.builder.CartBuilder
+import com.rvigo.saga.cart.domain.model.Cart
 import com.rvigo.saga.cart.infra.repository.CartRepository
 import com.rvigo.saga.lib.domain.message.event.Event
 import com.rvigo.saga.lib.domain.message.event.EventDispatcher
@@ -16,13 +17,16 @@ class CartServiceTest {
 
     private val cartRepository: CartRepository = mockk {
         every { save(any()) } answers {
+            val cart = firstArg<Cart>()
             CartBuilder.build {
-                this.id = firstArg()
+                this.id = cart.id
+                this.cartItems = cart.cartItems
             }
         }
         every { findById(any()) } answers {
+            val id = firstArg<UUID>()
             Optional.of(CartBuilder.build {
-                this.id = firstArg()
+                this.id = id
             })
         }
     }

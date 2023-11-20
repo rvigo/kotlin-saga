@@ -7,9 +7,10 @@ abstract class CommandDispatcher {
 
     private val logger by logger()
 
-    private val handlers: MutableMap<KClass<out Command>, CommandHandler> = mutableMapOf()
+    private val handlers: MutableMap<KClass<out Command>, CommandHandler<Command>> = mutableMapOf()
 
-    fun <T : Command> registerHandler(command: KClass<T>, handler: CommandHandler) {
+    fun <T : Command> registerHandler(command: KClass<T>, handler: CommandHandler<Command>) {
+        logger.info("registering handler ${handler.javaClass.simpleName} to command ${command.simpleName}")
         handlers[command] = handler
     }
 

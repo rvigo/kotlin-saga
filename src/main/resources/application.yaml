@@ -5,7 +5,8 @@ spring:
     password: postgres
 
   jpa:
-    hibernate.ddl-auto: create
+    open-in-view: false
+    hibernate.ddl-auto: update
     generate-ddl: true
     show-sql: true
     properties:
